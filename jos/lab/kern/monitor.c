@@ -58,6 +58,16 @@ int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
 	// Your code here.
+	uint32_t tmp_ebp = read_ebp();
+	while(tmp_ebp != 0) {
+		cprintf("ebp %08x  eip %08x  args %08x %08x %08x %08x %08x\n",
+			tmp_ebp, *((uint32_t*)tmp_ebp+1),
+			*((uint32_t*)tmp_ebp+2), *((uint32_t*)tmp_ebp+3),
+			*((uint32_t*)tmp_ebp+4), *((uint32_t*)tmp_ebp+5),
+			*((uint32_t*)tmp_ebp+6));
+		tmp_ebp = *(uint32_t*)tmp_ebp;
+	}
+
 	return 0;
 }
 

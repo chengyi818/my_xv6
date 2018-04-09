@@ -5,18 +5,22 @@
 #include "fcntl.h"
 
 // Parsed command representation
-#define EXEC  1
-#define REDIR 2
-#define PIPE  3
-#define LIST  4
-#define BACK  5
+// 各命令类型的定义
+#define EXEC  1  //可执行命令
+#define REDIR 2  //重定向命令 > <
+#define PIPE  3  //管道命令 |
+#define LIST  4  //列表命令 ;
+#define BACK  5  //后台命令 &
 
+// 最大参数个数
 #define MAXARGS 10
 
+// 命令头部定义
 struct cmd {
   int type;
 };
 
+// 各命令类型定义
 struct execcmd {
   int type;
   char *argv[MAXARGS];
@@ -48,12 +52,15 @@ struct backcmd {
   int type;
   struct cmd *cmd;
 };
+// 结束: 各命令类型定义
 
+// 函数声明
 int fork1(void);  // Fork but panics on failure.
 void panic(char*);
 struct cmd *parsecmd(char*);
 
 // Execute cmd.  Never returns.
+// 根据命令类型,执行命令
 void
 runcmd(struct cmd *cmd)
 {
@@ -130,6 +137,7 @@ runcmd(struct cmd *cmd)
   exit();
 }
 
+// 读取输入命令到buf中
 int
 getcmd(char *buf, int nbuf)
 {
@@ -148,6 +156,7 @@ main(void)
   int fd;
 
   // Ensure that three file descriptors are open.
+  // 确保至少0,1,2三个文件描述符被打开
   while((fd = open("console", O_RDWR)) >= 0){
     if(fd >= 3){
       close(fd);
@@ -156,7 +165,9 @@ main(void)
   }
 
   // Read and run input commands.
+  // 读取输入命令到buf中
   while(getcmd(buf, sizeof(buf)) >= 0){
+    // 单独处理cd命令
     if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
       // Chdir must be called by the parent, not the child.
       buf[strlen(buf)-1] = 0;  // chop \n
@@ -164,6 +175,9 @@ main(void)
         printf(2, "cannot cd %s\n", buf+3);
       continue;
     }
+    // fork进程,在子进程中执行shell命令
+    // 首先调用parsecmd解析buf,然后调用runcmd运行解析后的命令.
+    // 显然,解析后的命令应该是一个树状结构
     if(fork1() == 0)
       runcmd(parsecmd(buf));
     wait();
@@ -171,6 +185,7 @@ main(void)
   exit();
 }
 
+// 工具函数,报错退出
 void
 panic(char *s)
 {
@@ -178,6 +193,7 @@ panic(char *s)
   exit();
 }
 
+// 工具函数, 对fork的简单封装
 int
 fork1(void)
 {
@@ -191,7 +207,9 @@ fork1(void)
 
 //PAGEBREAK!
 // Constructors
+// 构造器
 
+// 返回可执行命令结构体
 struct cmd*
 execcmd(void)
 {
@@ -203,6 +221,7 @@ execcmd(void)
   return (struct cmd*)cmd;
 }
 
+// 返回重定向命令结构体
 struct cmd*
 redircmd(struct cmd *subcmd, char *file, char *efile, int mode, int fd)
 {
@@ -219,6 +238,7 @@ redircmd(struct cmd *subcmd, char *file, char *efile, int mode, int fd)
   return (struct cmd*)cmd;
 }
 
+// 返回管道命令结构体
 struct cmd*
 pipecmd(struct cmd *left, struct cmd *right)
 {
@@ -232,6 +252,7 @@ pipecmd(struct cmd *left, struct cmd *right)
   return (struct cmd*)cmd;
 }
 
+// 返回列表命令结构体
 struct cmd*
 listcmd(struct cmd *left, struct cmd *right)
 {
@@ -245,6 +266,7 @@ listcmd(struct cmd *left, struct cmd *right)
   return (struct cmd*)cmd;
 }
 
+// 返回后台命令结构体
 struct cmd*
 backcmd(struct cmd *subcmd)
 {
@@ -258,6 +280,7 @@ backcmd(struct cmd *subcmd)
 }
 //PAGEBREAK!
 // Parsing
+// 解析
 
 char whitespace[] = " \t\r\n\v";
 char symbols[] = "<|>&;()";
@@ -307,12 +330,15 @@ gettoken(char **ps, char *es, char **q, char **eq)
   return ret;
 }
 
+// 判断ps字符串开头是否包含在toks中
+// peek: 瞥,偷看
 int
 peek(char **ps, char *es, char *toks)
 {
   char *s;
 
   s = *ps;
+  // 去除前面的无效字符
   while(s < es && strchr(whitespace, *s))
     s++;
   *ps = s;
@@ -330,6 +356,7 @@ parsecmd(char *s)
   char *es;
   struct cmd *cmd;
 
+  // es指向命令结束位置
   es = s + strlen(s);
   cmd = parseline(&s, es);
   peek(&s, es, "");

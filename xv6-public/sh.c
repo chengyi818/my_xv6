@@ -285,6 +285,16 @@ backcmd(struct cmd *subcmd)
 char whitespace[] = " \t\r\n\v";
 char symbols[] = "<|>&;()";
 
+/*
+  工具函数
+ 从ps中提取特殊symbol,并返回.同时,调整ps为移除symbol后的字符串.
+ 如果有特殊含义字符,则返回特殊含义字符.如果没有则返回'a',同时将跳过一段字符.
+参数:
+ ps: 字符串起始
+ es: 字符串结束
+ q: 移位前有效字符串的起始位置
+ eq: 移位后提取出的有效字符串的结束位置
+*/
 int
 gettoken(char **ps, char *es, char **q, char **eq)
 {
@@ -329,9 +339,11 @@ gettoken(char **ps, char *es, char **q, char **eq)
   *ps = s;
   return ret;
 }
-
-// 判断ps字符串开头是否包含在toks中
-// peek: 瞥,偷看
+/*
+  工具函数
+ 判断ps字符串开头是否包含在toks中
+ peek: 瞥,偷看
+*/
 int
 peek(char **ps, char *es, char *toks)
 {
@@ -358,7 +370,9 @@ parsecmd(char *s)
 
   // es指向命令结束位置
   es = s + strlen(s);
+  // 从s中解析cmd
   cmd = parseline(&s, es);
+  // 判断s是否全部解析完毕
   peek(&s, es, "");
   if(s != es){
     printf(2, "leftovers: %s\n", s);
@@ -473,6 +487,7 @@ parseexec(char **ps, char *es)
 }
 
 // NUL-terminate all the counted strings.
+// 为所有命令添加 '\0' 结束符?
 struct cmd*
 nulterminate(struct cmd *cmd)
 {

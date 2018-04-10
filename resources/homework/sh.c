@@ -61,22 +61,51 @@ runcmd(struct cmd *cmd)
     ecmd = (struct execcmd*)cmd;
     if(ecmd->argv[0] == 0)
       _exit(0);
-    fprintf(stderr, "exec not implemented\n");
+    /* fprintf(stderr, "exec not implemented\n"); */
     // Your code here ...
+    if(execvp(ecmd->argv[0], ecmd->argv)) {
+        perror("execv error:");
+    }
     break;
 
   case '>':
   case '<':
     rcmd = (struct redircmd*)cmd;
-    fprintf(stderr, "redir not implemented\n");
+    /* fprintf(stderr, "redir not implemented\n"); */
     // Your code here ...
+    close(rcmd->fd);
+    if(open(rcmd->file, rcmd->flags, S_IRUSR) < 0) {
+        perror("open file fail:");
+        _exit(-1);
+    }
     runcmd(rcmd->cmd);
     break;
 
   case '|':
     pcmd = (struct pipecmd*)cmd;
-    fprintf(stderr, "pipe not implemented\n");
+    /* fprintf(stderr, "pipe not implemented\n"); */
     // Your code here ...
+    // pipe, fork, close, dup
+    int pipefd[2];
+    if(pipe(pipefd) == -1) {
+        perror("pipe error");
+        _exit(-1);
+    }
+    if(fork1() == 0) {
+        // child process
+        close(STDOUT_FILENO);
+        dup(pipefd[1]);
+        close(pipefd[0]);
+        close(pipefd[1]);
+        runcmd(pcmd->left);
+    } else {
+        // parent process
+        close(STDIN_FILENO);
+        dup(pipefd[0]);
+        close(pipefd[0]);
+        close(pipefd[1]);
+        runcmd(pcmd->right);
+    }
     break;
   }
   _exit(0);
@@ -167,6 +196,7 @@ pipecmd(struct cmd *left, struct cmd *right)
 }
 
 // Parsing
+
 
 char whitespace[] = " \t\r\n\v";
 char symbols[] = "<|>";

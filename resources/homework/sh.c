@@ -87,6 +87,7 @@ runcmd(struct cmd *cmd)
     // Your code here ...
     // pipe, fork, close, dup
     int pipefd[2];
+    int r;
     if(pipe(pipefd) == -1) {
         perror("pipe error");
         _exit(-1);
@@ -98,7 +99,8 @@ runcmd(struct cmd *cmd)
         close(pipefd[0]);
         close(pipefd[1]);
         runcmd(pcmd->left);
-    } else {
+    }
+    if(fork1() == 0){
         // parent process
         close(STDIN_FILENO);
         dup(pipefd[0]);
@@ -106,6 +108,10 @@ runcmd(struct cmd *cmd)
         close(pipefd[1]);
         runcmd(pcmd->right);
     }
+    close(pipefd[0]);
+    close(pipefd[1]);
+    wait(&r);
+    wait(&r);
     break;
   }
   _exit(0);

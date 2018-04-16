@@ -388,7 +388,7 @@ parseline(char **ps, char *es)
   struct cmd *cmd;
 
   cmd = parsepipe(ps, es);
-  while(peek(ps, es, "&")){
+  if(peek(ps, es, "&")) {
     gettoken(ps, es, 0, 0);
     cmd = backcmd(cmd);
   }
@@ -415,10 +415,10 @@ parsepipe(char **ps, char *es)
 struct cmd*
 parseredirs(struct cmd *cmd, char **ps, char *es)
 {
-  int tok;
   char *q, *eq;
 
   while(peek(ps, es, "<>")){
+    int tok;
     tok = gettoken(ps, es, 0, 0);
     if(gettoken(ps, es, &q, &eq) != 'a')
       panic("missing file for redirection");
@@ -457,7 +457,7 @@ struct cmd*
 parseexec(char **ps, char *es)
 {
   char *q, *eq;
-  int tok, argc;
+  int argc;
   struct execcmd *cmd;
   struct cmd *ret;
 
@@ -470,6 +470,7 @@ parseexec(char **ps, char *es)
   argc = 0;
   ret = parseredirs(ret, ps, es);
   while(!peek(ps, es, "|)&;")){
+    int tok;
     if((tok=gettoken(ps, es, &q, &eq)) == 0)
       break;
     if(tok != 'a')

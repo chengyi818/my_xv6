@@ -29,4 +29,5 @@ SYSCALL(getpid)
 SYSCALL(sbrk)
 SYSCALL(sleep)
 SYSCALL(uptime)
+// 用户空间,date函数的实现
 SYSCALL(date)

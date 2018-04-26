@@ -90,7 +90,15 @@ sys_uptime(void)
   return xticks;
 }
 
+// date系统调用实际实现
 int
 sys_date(void) {
+  struct rtcdate* r;
+  // 从用户空间栈顶获取参数
+  if(argptr(0, (void*)&r, sizeof(*r)) < 0)
+    return -1;
+
+  cmostime(r);
+
   return 0;
 }

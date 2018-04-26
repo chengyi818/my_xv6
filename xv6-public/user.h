@@ -23,7 +23,8 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-int date(void);
+// 用户空间,date函数的声明
+int date(struct rtcdate*);
 
 // ulib.c
 int stat(char*, struct stat*);

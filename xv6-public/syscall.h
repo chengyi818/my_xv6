@@ -20,4 +20,5 @@
 #define SYS_link   19
 #define SYS_mkdir  20
 #define SYS_close  21
+// date系统调用号,对应系统调用表中的函数
 #define SYS_date   22

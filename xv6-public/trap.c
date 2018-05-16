@@ -13,6 +13,7 @@ struct gatedesc idt[256];
 extern uint vectors[];  // in vectors.S: array of 256 entry pointers
 struct spinlock tickslock;
 uint ticks;
+int mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm);
 
 void
 tvinit(void)
@@ -30,6 +31,19 @@ void
 idtinit(void)
 {
   lidt(idt, sizeof(idt));
+}
+
+void handle_page_fault() {
+  struct proc *curproc = myproc();
+  uint va = PGROUNDDOWN(rcr2());
+  char *mem = kalloc();
+  if(mem == 0)
+    return;
+
+  memset(mem, 0, PGSIZE);
+  mappages(curproc->pgdir, (char*)va, PGSIZE, V2P(mem), PTE_W|PTE_U);
+  switchuvm(curproc);
+  return;
 }
 
 //PAGEBREAK: 41
@@ -76,6 +90,9 @@ trap(struct trapframe *tf)
     cprintf("cpu%d: spurious interrupt at %x:%x\n",
             cpuid(), tf->cs, tf->eip);
     lapiceoi();
+    break;
+  case T_PGFLT:
+    handle_page_fault();
     break;
 
   //PAGEBREAK: 13

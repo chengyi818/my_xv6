@@ -50,9 +50,27 @@ sys_sbrk(void)
 
   if(argint(0, &n) < 0)
     return -1;
-  addr = myproc()->sz;
-  if(growproc(n) < 0)
+
+  /*
+    延迟分配内存,因此在sbrk()时不实际分配物理内存,仅增加进程可用的虚拟内存空间.
+  */
+
+  /* addr = myproc()->sz; */
+  /* if(growproc(n) < 0) */
+  /*   return -1; */
+
+  // new
+  struct proc *curproc = myproc();
+  addr = curproc->sz;
+
+  if((uint)addr+n > KERNBASE)
     return -1;
+
+  if(n < 0)
+    return addr;
+
+  curproc->sz += n;
+
   return addr;
 }
 

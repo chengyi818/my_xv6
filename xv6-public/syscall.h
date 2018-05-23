@@ -22,3 +22,5 @@
 #define SYS_close  21
 // date系统调用号,对应系统调用表中的函数
 #define SYS_date   22
+// alarm系统调用号,对应系统调用表中的函数
+#define SYS_alarm   23

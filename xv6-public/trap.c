@@ -36,14 +36,35 @@ idtinit(void)
 void handle_page_fault() {
   struct proc *curproc = myproc();
   uint va = PGROUNDDOWN(rcr2());
-  char *mem = kalloc();
-  if(mem == 0)
+  if(va > curproc->sz) {
+    exit();
     return;
+  }
+  char *mem = kalloc();
+  if(mem == 0) {
+    exit();
+    return;
+  }
 
   memset(mem, 0, PGSIZE);
   mappages(curproc->pgdir, (char*)va, PGSIZE, V2P(mem), PTE_W|PTE_U);
   switchuvm(curproc);
   return;
+}
+
+void handle_alarm(struct trapframe *tf) {
+  if(myproc() != 0 && (tf->cs & 3) == 3) {
+    myproc()->pastticks++;
+    /* cprintf("pastticks++\n"); */
+    if(myproc()->pastticks == myproc()->alarmticks
+       && tf->eip != (uint)myproc()->alarmhandler) {
+      myproc()->pastticks = 0;
+      /* cprintf("pastticks = 0\n"); */
+      tf->esp -= 4;
+      *(uint*)tf->esp = tf->eip;
+      tf->eip = (uint)myproc()->alarmhandler;
+    }
+  }
 }
 
 //PAGEBREAK: 41
@@ -68,6 +89,7 @@ trap(struct trapframe *tf)
       wakeup(&ticks);
       release(&tickslock);
     }
+    handle_alarm(tf);
     lapiceoi();
     break;
   case T_IRQ0 + IRQ_IDE:

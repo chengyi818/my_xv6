@@ -25,6 +25,8 @@ int sleep(int);
 int uptime(void);
 // 用户空间,date函数的声明
 int date(struct rtcdate*);
+// 用户空间, alarm函数的声明
+int alarm(int ticks, void (*handler)());
 
 // ulib.c
 int stat(char*, struct stat*);

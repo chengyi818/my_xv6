@@ -105,6 +105,8 @@ extern int sys_write(void);
 extern int sys_uptime(void);
 // 表示sys_date在其他源文件实现
 extern int sys_date(void);
+// 表示sys_alarm在其他源文件实现
+extern int sys_alarm(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -129,7 +131,8 @@ static int (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 // 在内核系统调用表中,增加系统调用date的实际实现函数
-[SYS_date]   sys_date,
+[SYS_date]    sys_date,
+[SYS_alarm]   sys_alarm
 };
 
 /* static char* syscalls_name[] = { */

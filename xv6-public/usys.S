@@ -31,3 +31,5 @@ SYSCALL(sleep)
 SYSCALL(uptime)
 // 用户空间,date函数的实现
 SYSCALL(date)
+// 用户空间,alarm函数的实现
+SYSCALL(alarm)

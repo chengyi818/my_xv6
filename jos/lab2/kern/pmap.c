@@ -169,10 +169,10 @@ mem_init(void)
 	check_page_free_list(1);
 	check_page_alloc();
 
+	check_page();
+
 	// TODO: Remove this line when you're ready to test this function.
 	panic("mem_init: This function is not finished\n");
-
-	check_page();
 
 	//////////////////////////////////////////////////////////////////////
 	// Now we set up virtual memory
@@ -309,6 +309,7 @@ page_init(void)
 struct PageInfo *
 page_alloc(int alloc_flags)
 {
+	// Fill this function in
 	// check out of free memory
 	if(page_free_list < pages) {
 		cprintf("page_alloc out of memory\n");
@@ -325,7 +326,6 @@ page_alloc(int alloc_flags)
 		memset(page2kva(result), 0, PGSIZE);
 	}
 
-	// Fill this function in
 	return result;
 }
 

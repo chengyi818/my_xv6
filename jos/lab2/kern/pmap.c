@@ -390,7 +390,29 @@ pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 	// Fill this function in
-	return NULL;
+	pte_t* pgtab;
+	pde_t* pgdir_entry;
+
+	pgdir_entry = &pgdir[PDX(va)];
+	if(*pgdir_entry & PTE_P) {
+		pgtab = (pte_t*)KADDR(PTE_ADDR(*pgdir_entry));
+	} else {
+		// alloc new page table
+		if(!create) {
+			return NULL;
+		}
+
+		struct PageInfo* allocted_page = page_alloc(ALLOC_ZERO);
+		if(!allocted_page) {
+			return NULL;
+		}
+		allocted_page->pp_ref++;
+
+		pgtab = (pte_t*)page2kva(allocted_page);
+		*pgdir_entry = page2pa(allocted_page) | PTE_P | PTE_W;
+	}
+
+	return &pgtab[PTX(va)];
 }
 
 //
@@ -408,6 +430,15 @@ static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
 	// Fill this function in
+	pte_t* pgtable_entry;
+	size_t page_num = size / PGSIZE;
+
+	for(size_t i = 0; i < page_num; i++) {
+		pgtable_entry = pgdir_walk(pgdir, (void*)(va + (uintptr_t)i * PGSIZE), 1);
+		if(pgtable_entry) {
+			*pgtable_entry = (pa + (physaddr_t)i * PGSIZE) | perm | PTE_P;
+		}
+	}
 }
 
 //

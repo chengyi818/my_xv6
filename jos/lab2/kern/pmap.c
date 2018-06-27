@@ -435,7 +435,7 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 	for(size_t i = 0; i < page_num; i++) {
 		pgtable_entry = pgdir_walk(pgdir, (void*)(va + (uintptr_t)i * PGSIZE), 1);
 		if(pgtable_entry) {
-			*pgtable_entry = (pa + (physaddr_t)i * PGSIZE) | perm | PTE_U | PTE_P;
+			*pgtable_entry = (pa + (physaddr_t)i * PGSIZE) | perm | PTE_P;
 		}
 	}
 }

@@ -52,8 +52,8 @@ i386_detect_memory(void)
 	npages = totalmem / (PGSIZE / 1024);
 	npages_basemem = basemem / (PGSIZE / 1024);
 
-	cprintf("Physical memory: %uK available, base = %uK, extended = %uK, npages = %u\n",
-		totalmem, basemem, totalmem - basemem, npages);
+	/* cprintf("Physical memory: %uK available, base = %uK, extended = %uK, npages = %u\n", */
+	/* 	totalmem, basemem, totalmem - basemem, npages); */
 }
 
 
@@ -109,7 +109,7 @@ boot_alloc(uint32_t n)
 	result = nextfree;
 	nextfree = ROUNDUP(nextfree+n, PGSIZE);
 
-	//cprintf("boot_alloc: result=%p, nextfree=%p\n", result, nextfree);
+	/* cprintf("boot_alloc: result=%p, nextfree=%p\n", result, nextfree); */
 
 	return result;
 }
@@ -170,8 +170,6 @@ mem_init(void)
 	check_page_alloc();
 	check_page();
 
-	// TODO: Remove this line when you're ready to test this function.
-	panic("mem_init: This function is not finished\n");
 
 	//////////////////////////////////////////////////////////////////////
 	// Now we set up virtual memory
@@ -183,6 +181,11 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
+	size_t pages_size;
+	pages_size = ROUNDUP(sizeof(struct PageInfo) * npages, PGSIZE);
+
+	boot_map_region(kern_pgdir, (uintptr_t)UPAGES, pages_size, PADDR(pages), PTE_U | PTE_P);
+	boot_map_region(kern_pgdir, (uintptr_t)pages, pages_size, PADDR(pages), PTE_W | PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -195,6 +198,10 @@ mem_init(void)
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
+	// bootstack    0xf010c000
+	// bootstacktop 0xf0114000
+	// KSTKSIZE     8 * 4096
+	boot_map_region(kern_pgdir, (uintptr_t)(KSTACKTOP-KSTKSIZE), KSTKSIZE, PADDR(bootstack), PTE_W | PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -204,6 +211,7 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
+	boot_map_region(kern_pgdir, KERNBASE, ((1<<28)-(KERNBASE>>4))<<4, 0, PTE_W | PTE_P);
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
@@ -228,6 +236,8 @@ mem_init(void)
 
 	// Some more checks, only possible after kern_pgdir is installed.
 	check_page_installed_pgdir();
+	// TODO: Remove this line when you're ready to test this function.
+	panic("mem_init: This function is not finished\n");
 }
 
 // --------------------------------------------------------------
@@ -311,7 +321,7 @@ page_alloc(int alloc_flags)
 	// Fill this function in
 	// check out of free memory
 	if(page_free_list < pages) {
-		cprintf("page_alloc out of memory\n");
+		/* cprintf("page_alloc out of memory\n"); */
 		return NULL;
 	}
 

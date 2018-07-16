@@ -1,1 +1,4 @@
 -I./
+-Wgnu-designator
+-Wno-unused-parameter
+-Wint-to-pointer-cast

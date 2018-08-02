@@ -207,8 +207,7 @@ fork1(void)
 
 //PAGEBREAK!
 // Constructors
-// 构造器
-
+// cmd构造函数
 // 返回可执行命令结构体
 struct cmd*
 execcmd(void)

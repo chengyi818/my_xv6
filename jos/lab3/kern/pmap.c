@@ -139,7 +139,6 @@ mem_init(void)
 	kern_pgdir = (pde_t *) boot_alloc(PGSIZE);
 	memset(kern_pgdir, 0, PGSIZE);
 
-
 	//////////////////////////////////////////////////////////////////////
 	// Recursively insert PD in itself as a page table, to form
 	// a virtual page table at virtual address UVPT.
@@ -257,7 +256,7 @@ mem_init(void)
 	// Some more checks, only possible after kern_pgdir is installed.
 	check_page_installed_pgdir();
 	// TODO: Remove this line when you're ready to test this function.
-	panic("mem_init: This function is not finished\n");
+	/* panic("mem_init: This function is not finished\n"); */
 }
 
 // --------------------------------------------------------------
@@ -426,11 +425,11 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 	if(*pgdir_entry & PTE_P) {
 		pgtab = (pte_t*)KADDR(PTE_ADDR(*pgdir_entry));
 	} else {
-		// alloc new page table
 		if(!create) {
 			return NULL;
 		}
 
+		// alloc new page table
 		struct PageInfo* allocted_page = page_alloc(ALLOC_ZERO);
 		if(!allocted_page) {
 			return NULL;

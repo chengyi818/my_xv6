@@ -1,5 +1,3 @@
-/* See COPYRIGHT for copyright information. */
-
 #include <inc/x86.h>
 #include <inc/mmu.h>
 #include <inc/error.h>
@@ -24,7 +22,7 @@ static struct Env *env_free_list;	// Free environment list
 // Set up global descriptor table (GDT) with separate segments for
 // kernel mode and user mode.  Segments serve many purposes on the x86.
 // We don't use any of their memory-mapping capabilities, but we need
-// them to switch privilege levels. 
+// them to switch privilege levels.
 //
 // The kernel and user segments are identical except for the DPL.
 // To load the SS register, the CPL must equal the DPL.  Thus,
@@ -116,6 +114,14 @@ env_init(void)
 {
 	// Set up envs array
 	// LAB 3: Your code here.
+	for(int i=NENV-1; i>=0; i--) {
+		struct Env cur = envs[i];
+
+		cur.env_id = 0;
+		cur.env_status = ENV_FREE;
+		cur.env_link = env_free_list;
+		env_free_list = &cur;
+	}
 
 	// Per-CPU part of the initialization
 	env_init_percpu();
@@ -179,6 +185,10 @@ env_setup_vm(struct Env *e)
 	//    - The functions in kern/pmap.h are handy.
 
 	// LAB 3: Your code here.
+	// 思路: 将kern_pgdir中的内容拷贝到env_pgdir
+	p->pp_ref++;
+	e->env_pgdir = (pde_t*)page2kva(p);
+	memcpy(e->env_pgdir, kern_pgdir, PGSIZE);
 
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
@@ -267,6 +277,21 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
+	uint32_t i;
+	struct PageInfo *p = NULL;
+	pte_t* pte;
+
+	for(i = (uint32_t)ROUNDDOWN(va, PGSIZE); i < (uint32_t)ROUNDUP(va+len, PGSIZE); i += PGSIZE) {
+		pte = pgdir_walk(e->env_pgdir, (void*)i, 1);
+		if(*pte & PTE_P) {
+			*pte |= PTE_U | PTE_W;
+			continue;
+		}
+
+		if (!(p = page_alloc(0)))
+			panic("page_alloc fail");
+		*pte = page2pa(p) | PTE_U | PTE_W | PTE_P;
+	}
 }
 
 //
@@ -365,7 +390,6 @@ env_free(struct Env *e)
 	// Flush all mapped pages in the user portion of the address space
 	static_assert(UTOP % PTSIZE == 0);
 	for (pdeno = 0; pdeno < PDX(UTOP); pdeno++) {
-
 		// only look at mapped page tables
 		if (!(e->env_pgdir[pdeno] & PTE_P))
 			continue;
@@ -460,4 +484,3 @@ env_run(struct Env *e)
 
 	panic("env_run not yet implemented");
 }
-

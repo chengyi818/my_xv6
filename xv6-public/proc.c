@@ -131,7 +131,7 @@ userinit(void)
   p = allocproc();
 
   initproc = p;
-  // 分配进程page table,并映射
+  // 分配进程page directory
   if((p->pgdir = setupkvm()) == 0)
     panic("userinit: out of memory?");
   // 载入ELF文件

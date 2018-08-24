@@ -303,6 +303,7 @@ region_alloc(struct Env *e, void *va, size_t len)
 // This function loads all loadable segments from the ELF binary image
 // into the environment's user memory, starting at the appropriate
 // virtual addresses indicated in the ELF program header.
+//
 // At the same time it clears to zero any portions of these segments
 // that are marked in the program header as being mapped
 // but not actually present in the ELF file - i.e., the program's bss section.
@@ -341,18 +342,45 @@ load_icode(struct Env *e, uint8_t *binary)
 	//  Loading the segments is much simpler if you can move data
 	//  directly into the virtual addresses stored in the ELF binary.
 	//  So which page directory should be in force during
-	//  this function?
+	//  this function? e->env_pgdir
 	//
 	//  You must also do something with the program's entry point,
 	//  to make sure that the environment starts executing there.
 	//  What?  (See env_run() and env_pop_tf() below.)
 
 	// LAB 3: Your code here.
+	struct Proghdr *ph, *eph;
+	struct Elf* elfheader = (struct Elf*)binary;
+	if(elfheader->e_magic != ELF_MAGIC) {
+		panic("invalid ELF Header");
+	}
+
+	lcr3(PADDR(e->env_pgdir));
+
+	ph = (struct Proghdr*)((uint8_t*)elfheader + elfheader->e_phoff);
+	eph = ph + elfheader->e_phnum;
+	for(; ph < eph; ph++) {
+		if(ph->p_type != ELF_PROG_LOAD) {
+			continue;
+		}
+		region_alloc(e, (void*)ph->p_va, ph->p_memsz);
+		tlbflush();
+
+		memset((void*)ph->p_va, 0, ph->p_memsz);
+		memcpy((void*)ph->p_va, binary + ph->p_offset, ph->p_filesz);
+	}
+
+	e->env_tf.tf_eip = elfheader->e_entry;
 
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
-
 	// LAB 3: Your code here.
+	pte_t* pte = pgdir_walk(e->env_pgdir, (void*)USTACKTOP-PGSIZE, 1);
+	struct PageInfo *p = page_alloc(ALLOC_ZERO);
+	if(!p) {
+		panic("page_alloc fail");
+	}
+	*pte = page2pa(p) | PTE_U | PTE_W | PTE_P;
 }
 
 //
@@ -366,6 +394,14 @@ void
 env_create(uint8_t *binary, enum EnvType type)
 {
 	// LAB 3: Your code here.
+	struct Env e;
+	struct Env* ep = &e;
+	int r = env_alloc(&ep, 0);
+	if(r != 0) {
+		panic("env_alloc: %e", r);
+	}
+	load_icode(ep, binary);
+	ep->env_type = type;
 }
 
 //
@@ -481,6 +517,15 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
+	if(curenv && curenv->env_status == ENV_RUNNING) {
+		curenv->env_status = ENV_RUNNABLE;
+	}
+	curenv = e;
+	curenv->env_status = ENV_RUNNING;
+	curenv->env_runs = 0;
+	lcr3(PADDR(e->env_pgdir));
+
+	env_pop_tf(&e->env_tf);
 
 	panic("env_run not yet implemented");
 }

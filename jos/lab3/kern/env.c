@@ -114,14 +114,17 @@ env_init(void)
 {
 	// Set up envs array
 	// LAB 3: Your code here.
+	cprintf("env_init | env_free_list before: %p\n", env_free_list);
 	for(int i=NENV-1; i>=0; i--) {
 		struct Env cur = envs[i];
 
 		cur.env_id = 0;
 		cur.env_status = ENV_FREE;
 		cur.env_link = env_free_list;
-		env_free_list = &cur;
+		env_free_list = envs+i;
 	}
+	cprintf("env_init | envs start: %p\n", envs);
+	cprintf("env_init | env_free_list after: %p\n", env_free_list);
 
 	// Per-CPU part of the initialization
 	env_init_percpu();
@@ -188,6 +191,7 @@ env_setup_vm(struct Env *e)
 	// 思路: 将kern_pgdir中的内容拷贝到env_pgdir
 	p->pp_ref++;
 	e->env_pgdir = (pde_t*)page2kva(p);
+	cprintf("env_setup_vm | e->env_pgdir: %p\n", e->env_pgdir);
 	memcpy(e->env_pgdir, kern_pgdir, PGSIZE);
 
 	// UVPT maps the env's own page table read-only.
@@ -218,6 +222,9 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	// Allocate and set up the page directory for this environment.
 	if ((r = env_setup_vm(e)) < 0)
 		return r;
+
+	cprintf("env_alloc | e: %p\n", e);
+	cprintf("env_alloc | e->env_pgdir: %p\n", e->env_pgdir);
 
 	// Generate an env_id for this environment.
 	generation = (e->env_id + (1 << ENVGENSHIFT)) & ~(NENV - 1);
@@ -254,6 +261,7 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 
 	// commit the allocation
 	env_free_list = e->env_link;
+	cprintf("env_alloc | newenv_store: %p\n", newenv_store);
 	*newenv_store = e;
 
 	cprintf("[%08x] new env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
@@ -281,7 +289,8 @@ region_alloc(struct Env *e, void *va, size_t len)
 	struct PageInfo *p = NULL;
 	pte_t* pte;
 
-	for(i = (uint32_t)ROUNDDOWN(va, PGSIZE); i < (uint32_t)ROUNDUP(va+len, PGSIZE); i += PGSIZE) {
+	for(i = (uint32_t)ROUNDDOWN(va, PGSIZE);
+	    i < (uint32_t)ROUNDUP(va+len, PGSIZE); i += PGSIZE) {
 		pte = pgdir_walk(e->env_pgdir, (void*)i, 1);
 		if(*pte & PTE_P) {
 			*pte |= PTE_U | PTE_W;
@@ -394,9 +403,11 @@ void
 env_create(uint8_t *binary, enum EnvType type)
 {
 	// LAB 3: Your code here.
-	struct Env e;
-	struct Env* ep = &e;
+	struct Env* ep = NULL;
 	int r = env_alloc(&ep, 0);
+	cprintf("env_create | e: %p\n", ep);
+	cprintf("env_create | e->env_pgdir: %p\n", ep->env_pgdir);
+
 	if(r != 0) {
 		panic("env_alloc: %e", r);
 	}
@@ -479,6 +490,7 @@ env_destroy(struct Env *e)
 void
 env_pop_tf(struct Trapframe *tf)
 {
+	cprintf("env_pop_tf | tf: %p\n", tf);
 	asm volatile(
 		"\tmovl %0,%%esp\n"
 		"\tpopal\n"
@@ -517,6 +529,8 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
+	cprintf("env_run | e: %p\n", e);
+	cprintf("env_run | e->env_pgdir: %p\n", e->env_pgdir);
 	if(curenv && curenv->env_status == ENV_RUNNING) {
 		curenv->env_status = ENV_RUNNABLE;
 	}
@@ -525,7 +539,8 @@ env_run(struct Env *e)
 	curenv->env_runs = 0;
 	lcr3(PADDR(e->env_pgdir));
 
-	env_pop_tf(&e->env_tf);
+	cprintf("env_run | e->env_tf: %p\n", &(e->env_tf));
+	env_pop_tf(&(e->env_tf));
 
 	panic("env_run not yet implemented");
 }

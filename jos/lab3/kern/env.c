@@ -114,7 +114,6 @@ env_init(void)
 {
 	// Set up envs array
 	// LAB 3: Your code here.
-	cprintf("env_init | env_free_list before: %p\n", env_free_list);
 	for(int i=NENV-1; i>=0; i--) {
 		struct Env cur = envs[i];
 
@@ -191,6 +190,7 @@ env_setup_vm(struct Env *e)
 	// 思路: 将kern_pgdir中的内容拷贝到env_pgdir
 	p->pp_ref++;
 	e->env_pgdir = (pde_t*)page2kva(p);
+
 	cprintf("env_setup_vm | e->env_pgdir: %p\n", e->env_pgdir);
 	memcpy(e->env_pgdir, kern_pgdir, PGSIZE);
 
@@ -285,19 +285,20 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
+
 	uint32_t i;
 	struct PageInfo *p = NULL;
 	pte_t* pte;
 
-	for(i = (uint32_t)ROUNDDOWN(va, PGSIZE);
-	    i < (uint32_t)ROUNDUP(va+len, PGSIZE); i += PGSIZE) {
+	for(i = (uint32_t)ROUNDDOWN((uint32_t)va, PGSIZE);
+	    i < (uint32_t)ROUNDUP((uint32_t)va+len, PGSIZE); i += PGSIZE) {
 		pte = pgdir_walk(e->env_pgdir, (void*)i, 1);
 		if(*pte & PTE_P) {
 			*pte |= PTE_U | PTE_W;
 			continue;
 		}
 
-		if (!(p = page_alloc(0)))
+		if (!(p = page_alloc(ALLOC_ZERO)))
 			panic("page_alloc fail");
 		*pte = page2pa(p) | PTE_U | PTE_W | PTE_P;
 	}
@@ -372,8 +373,8 @@ load_icode(struct Env *e, uint8_t *binary)
 		if(ph->p_type != ELF_PROG_LOAD) {
 			continue;
 		}
+		assert(ph->p_filesz <= ph->p_memsz);
 		region_alloc(e, (void*)ph->p_va, ph->p_memsz);
-		tlbflush();
 
 		memset((void*)ph->p_va, 0, ph->p_memsz);
 		memcpy((void*)ph->p_va, binary + ph->p_offset, ph->p_filesz);
@@ -384,12 +385,15 @@ load_icode(struct Env *e, uint8_t *binary)
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
 	// LAB 3: Your code here.
+	///////////////////////////////////////////////////////
 	pte_t* pte = pgdir_walk(e->env_pgdir, (void*)USTACKTOP-PGSIZE, 1);
 	struct PageInfo *p = page_alloc(ALLOC_ZERO);
 	if(!p) {
 		panic("page_alloc fail");
 	}
 	*pte = page2pa(p) | PTE_U | PTE_W | PTE_P;
+	/////////////////////////////////////////////////////////
+	/* region_alloc(e, (void*)(USTACKTOP-PGSIZE), PGSIZE); */
 }
 
 //
@@ -536,10 +540,11 @@ env_run(struct Env *e)
 	}
 	curenv = e;
 	curenv->env_status = ENV_RUNNING;
-	curenv->env_runs = 0;
+	curenv->env_runs++;
 	lcr3(PADDR(e->env_pgdir));
 
 	cprintf("env_run | e->env_tf: %p\n", &(e->env_tf));
+	cprintf("env_run | e->env_tf.tf_eip: %p\n", e->env_tf.tf_eip);
 	env_pop_tf(&(e->env_tf));
 
 	panic("env_run not yet implemented");

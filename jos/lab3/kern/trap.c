@@ -76,6 +76,7 @@ void vector16();
 void vector17();
 void vector18();
 void vector19();
+void vector48();
 
 void
 trap_init(void)
@@ -103,6 +104,7 @@ trap_init(void)
 	SETGATE(idt[T_ALIGN], 0, GD_KT, vector17, DPL_KERNEL);
 	SETGATE(idt[T_MCHK], 0, GD_KT, vector18, DPL_KERNEL);
 	SETGATE(idt[T_SIMDERR], 0, GD_KT, vector19, DPL_KERNEL);
+	SETGATE(idt[T_SYSCALL], 0, GD_KT, vector48, DPL_USER);
 
 	// Per-CPU setup
 	trap_init_percpu();
@@ -182,12 +184,21 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
+
 	switch(tf->tf_trapno) {
 	case T_BRKPT:
 		monitor(tf);
 		return;
 	case T_PGFLT:
 		page_fault_handler(tf);
+		return;
+	case T_SYSCALL:
+		tf->tf_regs.reg_eax = syscall(tf->tf_regs.reg_eax,
+					      tf->tf_regs.reg_edx,
+					      tf->tf_regs.reg_ecx,
+					      tf->tf_regs.reg_ebx,
+					      tf->tf_regs.reg_edi,
+					      tf->tf_regs.reg_esi);
 		return;
 	default:
 		break;

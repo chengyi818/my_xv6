@@ -65,6 +65,7 @@
 	TRAPHANDLER(vector17, 17)
 	TRAPHANDLER_NOEC(vector18, 18)
 	TRAPHANDLER_NOEC(vector19, 19)
+	TRAPHANDLER_NOEC(vector48, 48)
 
 /*
  * Lab 3: Your code here for _alltraps

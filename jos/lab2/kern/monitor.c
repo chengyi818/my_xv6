@@ -85,8 +85,6 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 	return 0;
 }
 
-
-
 /***** Kernel monitor command interpreter *****/
 
 #define WHITESPACE "\t\r\n "

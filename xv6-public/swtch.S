@@ -18,8 +18,8 @@ swtch:
   pushl %edi
 
   # Switch stacks
-  movl %esp, (%eax)
-  movl %edx, %esp
+  movl %esp, (%eax)  # save old context address to old->context
+  movl %edx, %esp    # restore new->context to %esp
 
   # Load new callee-save registers
   popl %edi

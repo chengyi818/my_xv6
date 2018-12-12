@@ -377,6 +377,7 @@ sched(void)
 
   if(!holding(&ptable.lock))
     panic("sched ptable.lock");
+  // 除ptable.lock外,不允许持有其他spinlock
   if(mycpu()->ncli != 1)
     panic("sched locks");
   if(p->state == RUNNING)

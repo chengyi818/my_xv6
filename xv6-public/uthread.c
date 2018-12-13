@@ -92,26 +92,40 @@ thread_yield(void)
 }
 
 static void
-mythread(void)
+mythread1(void)
 {
   int i;
-  printf(1, "my thread running\n");
-  for (i = 0; i < 100; i++) {
-    printf(1, "my thread 0x%x\n", (int) current_thread);
+  printf(1, "my thread1 running\n");
+  for (i = 0; i < 10; i++) {
+    printf(1, "my thread1 0x%x\n", (int) current_thread);
     thread_yield();
   }
-  printf(1, "my thread: exit\n");
+  printf(1, "my thread1: exit\n");
   current_thread->state = FREE;
   thread_schedule();
 }
 
+static void
+mythread2(void)
+{
+  int i;
+  printf(1, "%p\n", &current_thread);
+  printf(1, "my thread2 running\n");
+  for (i = 0; i < 10; i++) {
+    printf(1, "my thread2 0x%x\n", (int) current_thread);
+    thread_yield();
+  }
+  printf(1, "my thread2: exit\n");
+  current_thread->state = FREE;
+  thread_schedule();
+}
 
 int
 main(int argc, char *argv[])
 {
   thread_init();
-  thread_create(mythread);
-  thread_create(mythread);
+  thread_create(mythread1);
+  thread_create(mythread2);
   thread_schedule();
   return 0;
 }

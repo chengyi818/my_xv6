@@ -18,13 +18,14 @@
         //movl next_thread,	current_thread
         //movl 0, next_thread
 
-         //movl next_thread, %eax
-         //movl %eax, [current_thread]
-         //movl 0, %eax
-         //movl %eax, [next_thread]
+        leal current_thread, %eax
+        movl next_thread, %ebx
+        movl %ebx, (%eax)
+        leal next_thread, %eax
+        movl $0, (%eax)
 
         // restore from current_thread
-        movl next_thread, %eax
+        movl current_thread, %eax
         movl (%eax), %esp
         popal
         // pop return address from stack

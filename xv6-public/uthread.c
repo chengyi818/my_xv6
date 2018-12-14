@@ -42,7 +42,7 @@ thread_schedule(void)
   thread_p t;
 
   /* Find another runnable thread. */
-  printf(1, "thread_schedule enter\n");
+  /* printf(1, "thread_schedule enter\n"); */
   next_thread = 0;
   for (t = all_thread; t < all_thread + MAX_THREAD; t++) {
     if (t->state == RUNNABLE && t != current_thread) {
@@ -63,7 +63,7 @@ thread_schedule(void)
 
   if (current_thread != next_thread) {         /* switch threads?  */
     next_thread->state = RUNNING;
-    printf(1, "thread_switch called\n");
+    /* printf(1, "thread_switch called\n"); */
     thread_switch();
   } else
     next_thread = 0;
@@ -109,7 +109,6 @@ static void
 mythread2(void)
 {
   int i;
-  printf(1, "%p\n", &current_thread);
   printf(1, "my thread2 running\n");
   for (i = 0; i < 10; i++) {
     printf(1, "my thread2 0x%x\n", (int) current_thread);

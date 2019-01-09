@@ -45,10 +45,10 @@
 #define NPDENTRIES	1024		// page directory entries per page directory
 #define NPTENTRIES	1024		// page table entries per page table
 
-#define PGSIZE		4096		// bytes mapped by a page
+#define PGSIZE		4096		// bytes mapped by a page, typically 4KB
 #define PGSHIFT		12		// log2(PGSIZE)
 
-#define PTSIZE		(PGSIZE*NPTENTRIES) // bytes mapped by a page directory entry
+#define PTSIZE		(PGSIZE*NPTENTRIES) // bytes mapped by a page directory entry, typically 4MB
 #define PTSHIFT		22		// log2(PTSIZE)
 
 #define PTXSHIFT	12		// offset of PTX in a linear address

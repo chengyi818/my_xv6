@@ -71,6 +71,10 @@ void handle_alarm(struct trapframe *tf) {
 void
 trap(struct trapframe *tf)
 {
+  if(tf->cs&3) {
+    lock_kernel();
+  }
+
   if(tf->trapno == T_SYSCALL){
     if(myproc()->killed)
       exit();

@@ -119,16 +119,18 @@ env_init(void)
 {
 	// Set up envs array
 	// LAB 3: Your code here.
+	struct Env* tmp;
 	for(int i=NENV-1; i>=0; i--) {
-		struct Env cur = envs[i];
+		tmp = envs+i;
+		tmp->env_id = 0;
+		tmp->env_status = ENV_FREE;
 
-		cur.env_id = 0;
-		cur.env_status = ENV_FREE;
-		cur.env_link = env_free_list;
+		tmp->env_link = env_free_list;
 		env_free_list = envs+i;
 	}
 	DEBUG("envs start: %p\n", envs);
-	DEBUG("env_free_list after: %p\n", env_free_list);
+	DEBUG("env_free_list out: %p\n", env_free_list);
+	DEBUG("env_free_list->env_link out: %p\n", env_free_list->env_link);
 
 	// Per-CPU part of the initialization
 	env_init_percpu();
@@ -221,12 +223,16 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	int r;
 	struct Env *e;
 
-	if (!(e = env_free_list))
+	if (!(e = env_free_list)) {
+		DEBUG("return E_NO_FREE_ENV");
 		return -E_NO_FREE_ENV;
+	}
 
 	// Allocate and set up the page directory for this environment.
-	if ((r = env_setup_vm(e)) < 0)
+	if ((r = env_setup_vm(e)) < 0) {
+		DEBUG("return after env_set_vm");
 		return r;
+	}
 
 	DEBUG("e: %p\n", e);
 	DEBUG("e->env_pgdir: %p\n", e->env_pgdir);
@@ -423,6 +429,7 @@ env_create(uint8_t *binary, enum EnvType type)
 	// LAB 3: Your code here.
 	struct Env* ep = NULL;
 	int r = env_alloc(&ep, 0);
+	DEBUG("r: %d\n", r);
 	DEBUG("e: %p\n", ep);
 	DEBUG("e->env_pgdir: %p\n", ep->env_pgdir);
 

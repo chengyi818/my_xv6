@@ -85,7 +85,17 @@ sys_exofork(void)
 	// will appear to return 0.
 
 	// LAB 4: Your code here.
-	panic("sys_exofork not implemented");
+	/* panic("sys_exofork not implemented"); */
+
+	struct Env* ep = NULL;
+	int r = env_alloc(&ep, 0);
+	if(r != 0){
+		return -E_NO_FREE_ENV;
+	}
+
+	ep->env_status = ENV_NOT_RUNNABLE;
+	memcpy(&ep->env_tf, &curenv->env_tf, sizeof(struct Trapframe));
+	ep->env_tf.tf_regs.reg_eax = 0;
 }
 
 // Set envid's env_status to status, which must be ENV_RUNNABLE

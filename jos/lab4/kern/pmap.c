@@ -11,6 +11,9 @@
 #include <kern/env.h>
 #include <kern/cpu.h>
 
+/* #define __DEBUG__ */
+#include <inc/cydebug.h>
+
 // These variables are set by i386_detect_memory()
 size_t npages;			// Amount of physical memory (in pages)
 static size_t npages_basemem;	// Amount of base memory (in pages)
@@ -751,25 +754,22 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 	uintptr_t i = 0;
 
 	for(i = (uintptr_t)ROUNDDOWN(va, PGSIZE); i < (uintptr_t)ROUNDUP(va+len, PGSIZE); i+=PGSIZE) {
+		DEBUG("i: %ld\n", i);
 		if(i > ULIM) {
 			ret = -E_FAULT;
+			DEBUG("i>ULIM");
 			break;
 		}
 
 		pte_t* pte = pgdir_walk(env->env_pgdir, (void*)i, 0);
-		if(((uintptr_t)pte & PTE_U) == 0) {
-			ret = -E_FAULT;
-			break;
-		} else if(((uintptr_t)pte & PTE_P) == 0) {
-			ret = -E_FAULT;
-			break;
-		} else if((((uintptr_t)pte ^ perm) & perm) != 0) {
+		if (pte == NULL || (*pte & (perm | PTE_P)) != (perm | PTE_P)) {
 			ret = -E_FAULT;
 			break;
 		}
 	}
 
 	if(ret == -E_FAULT) {
+		DEBUG("va: %p, len: %d\n", va, len);
 		user_mem_check_addr = i;
 	}
 	return ret;

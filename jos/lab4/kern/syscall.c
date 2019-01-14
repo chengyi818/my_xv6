@@ -89,13 +89,14 @@ sys_exofork(void)
 
 	struct Env* ep = NULL;
 	int r = env_alloc(&ep, 0);
-	if(r != 0){
-		return -E_NO_FREE_ENV;
+	if(r < 0){
+		return r;
 	}
 
 	ep->env_status = ENV_NOT_RUNNABLE;
 	memcpy(&ep->env_tf, &curenv->env_tf, sizeof(struct Trapframe));
 	ep->env_tf.tf_regs.reg_eax = 0;
+	return ep->env_id;
 }
 
 // Set envid's env_status to status, which must be ENV_RUNNABLE
@@ -115,7 +116,20 @@ sys_env_set_status(envid_t envid, int status)
 	// envid's status.
 
 	// LAB 4: Your code here.
-	panic("sys_env_set_status not implemented");
+	/* panic("sys_env_set_status not implemented"); */
+
+	// 检查入参
+	if(status != ENV_RUNNABLE || status != ENV_NOT_RUNNABLE) {
+		return -E_INVAL;
+	}
+
+	struct Env* ep = NULL;
+	int r = envid2env(envid, &ep, 1);
+	if(r < 0) {
+		return r;
+	}
+	ep->env_status = status;
+        return 0;
 }
 
 // Set the page fault upcall for 'envid' by modifying the corresponding struct
@@ -143,11 +157,11 @@ sys_env_set_pgfault_upcall(envid_t envid, void *func)
 //         but no other bits may be set.  See PTE_SYSCALL in inc/mmu.h.
 //
 // Return 0 on success, < 0 on error.  Errors are:
-//	-E_BAD_ENV if environment envid doesn't currently exist,
+//	1. -E_BAD_ENV if environment envid doesn't currently exist,
 //		or the caller doesn't have permission to change envid.
-//	-E_INVAL if va >= UTOP, or va is not page-aligned.
-//	-E_INVAL if perm is inappropriate (see above).
-//	-E_NO_MEM if there's no memory to allocate the new page,
+//	2. -E_INVAL if va >= UTOP, or va is not page-aligned.
+//	3. -E_INVAL if perm is inappropriate (see above).
+//	4. -E_NO_MEM if there's no memory to allocate the new page,
 //		or to allocate any necessary page tables.
 static int
 sys_page_alloc(envid_t envid, void *va, int perm)
@@ -160,7 +174,39 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	//   allocated!
 
 	// LAB 4: Your code here.
-	panic("sys_page_alloc not implemented");
+	// 检查入参
+	// 1
+	int r;
+	struct Env* ep = NULL;
+	r = envid2env(envid, &ep, 1);
+	if(r < 0) {
+		return r;
+	}
+
+	// 2
+	if(va >= UTOP || va%PGSIZE != 0) {
+		return -E_INVAL;
+	}
+
+	// 3
+	if(perm&(PTE_U | PTE_P) != (PTE_U | PTE_P)) {
+		return -E_INVAL;
+	}
+	if(perm^(PTE_U|PTE_P|PTE_AVAIL|PTE_W) != 0) {
+		return -E_INVAL;
+	}
+	// 4
+	struct PageInfo* pp = page_alloc(ALLOC_ZERO);
+	if(!pp) {
+		return -E_NO_MEM;
+	}
+	r = page_insert(ep->env_pgdir, pp, va, perm);
+	if(r < 0) {
+		return r;
+	}
+	return 0;
+
+	/* panic("sys_page_alloc not implemented"); */
 }
 
 // Map the page of memory at 'srcva' in srcenvid's address space

@@ -67,6 +67,7 @@ sys_yield(void)
 	syscall(SYS_yield, 0, 0, 0, 0, 0, 0);
 }
 
+// 分配一页物理内存,并将之映射到指定虚拟地址
 int
 sys_page_alloc(envid_t envid, void *va, int perm)
 {
@@ -110,4 +111,3 @@ sys_ipc_recv(void *dstva)
 {
 	return syscall(SYS_ipc_recv, 1, (uint32_t)dstva, 0, 0, 0, 0);
 }
-

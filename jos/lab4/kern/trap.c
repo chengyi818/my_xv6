@@ -391,10 +391,41 @@ page_fault_handler(struct Trapframe *tf)
 	//   (the 'tf' variable points at 'curenv->env_tf').
 
 	// LAB 4: Your code here.
+	struct UTrapframe* uf;
+	size_t uf_len = sizeof(struct UTrapframe);
 
-	// Destroy the environment that caused the fault.
-	cprintf("[%08x] user fault va %08x ip %08x\n",
-		curenv->env_id, fault_va, tf->tf_eip);
-	print_trapframe(tf);
-	env_destroy(curenv);
+	// 1. 检查env_pgfault_upcall
+	if(!curenv->env_pgfault_upcall) {
+		// Destroy the environment that caused the fault.
+		cprintf("[%08x] user fault va %08x ip %08x\n",
+			curenv->env_id, fault_va, tf->tf_eip);
+		print_trapframe(tf);
+		env_destroy(curenv);
+	}
+
+	// 2. 决定uf起始地址
+	if(tf->tf_esp < USTACKTOP) {
+		// 首次异常
+		uf = (struct UTrapframe*)(UXSTACKTOP-uf_len);
+	} else {
+		// 递归异常
+		uf = (struct UTrapframe*)(tf->tf_esp-uf_len-4);
+	}
+	// 3. 内存及权限检查
+	user_mem_assert(curenv, uf, uf_len, PTE_W);
+
+	// 4. 设置uf
+	uf->utf_fault_va = fault_va;
+	uf->utf_err = tf->tf_err;
+	uf->utf_regs = tf->tf_regs;
+	uf->utf_eip = tf->tf_eip;
+	uf->utf_eflags = tf->tf_eflags;
+	uf->utf_esp = tf->tf_esp;
+
+	// 5. 修改trapframe
+	tf->tf_eip = (uintptr_t)curenv->env_pgfault_upcall;
+	tf->tf_esp = (uintptr_t)uf;
+
+	// 6. 执行新的trapframe
+	env_run(curenv);
 }

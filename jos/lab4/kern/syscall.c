@@ -144,13 +144,21 @@ sys_env_set_status(envid_t envid, int status)
 // 'func'.
 //
 // Returns 0 on success, < 0 on error.  Errors are:
-//	-E_BAD_ENV if environment envid doesn't currently exist,
+//	1. -E_BAD_ENV if environment envid doesn't currently exist,
 //		or the caller doesn't have permission to change envid.
 static int
 sys_env_set_pgfault_upcall(envid_t envid, void *func)
 {
 	// LAB 4: Your code here.
-	panic("sys_env_set_pgfault_upcall not implemented");
+	/* panic("sys_env_set_pgfault_upcall not implemented"); */
+
+	struct Env* ep = NULL;
+	int r = envid2env(envid, &ep, 1);
+	if(r < 0) {
+		DEBUG("1");
+		return r;
+	}
+	ep->env_pgfault_upcall = func;
 }
 
 // Allocate a page of memory and map it at 'va' with permission

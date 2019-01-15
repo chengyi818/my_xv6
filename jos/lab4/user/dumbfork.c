@@ -3,6 +3,8 @@
 
 #include <inc/string.h>
 #include <inc/lib.h>
+#define __DEBUG__
+#include <inc/cydebug.h>
 
 envid_t dumbfork(void);
 
@@ -28,10 +30,13 @@ duppage(envid_t dstenv, void *addr)
 	int r;
 
 	// This is NOT what you should do in your fork.
-	if ((r = sys_page_alloc(dstenv, addr, PTE_P|PTE_U|PTE_W)) < 0)
+	if ((r = sys_page_alloc(dstenv, addr, PTE_P|PTE_U|PTE_W)) < 0) {
+		DEBUG("userspace envid: %d\n", dstenv);
 		panic("sys_page_alloc: %e", r);
-	if ((r = sys_page_map(dstenv, addr, 0, UTEMP, PTE_P|PTE_U|PTE_W)) < 0)
+	}
+	if ((r = sys_page_map(dstenv, addr, 0, UTEMP, PTE_P|PTE_U|PTE_W)) < 0) {
 		panic("sys_page_map: %e", r);
+	}
 	memmove(UTEMP, addr, PGSIZE);
 	if ((r = sys_page_unmap(0, UTEMP)) < 0)
 		panic("sys_page_unmap: %e", r);
@@ -77,4 +82,3 @@ dumbfork(void)
 
 	return envid;
 }
-

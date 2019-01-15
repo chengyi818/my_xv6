@@ -83,6 +83,8 @@ envid2env(envid_t envid, struct Env **env_store, bool checkperm)
 		return 0;
 	}
 
+	DEBUG("env_id: %d\n", envid);
+
 	// Look up the Env structure via the index part of the envid,
 	// then check the env_id field in that struct Env
 	// to ensure that the envid is not stale
@@ -91,6 +93,7 @@ envid2env(envid_t envid, struct Env **env_store, bool checkperm)
 	e = &envs[ENVX(envid)];
 	if (e->env_status == ENV_FREE || e->env_id != envid) {
 		*env_store = 0;
+		DEBUG("check env_status or env_id fail");
 		return -E_BAD_ENV;
 	}
 
@@ -101,6 +104,7 @@ envid2env(envid_t envid, struct Env **env_store, bool checkperm)
 	// or an immediate child of the current environment.
 	if (checkperm && e != curenv && e->env_parent_id != curenv->env_id) {
 		*env_store = 0;
+		DEBUG("check permission fail");
 		return -E_BAD_ENV;
 	}
 

@@ -353,7 +353,7 @@ page_fault_handler(struct Trapframe *tf)
 
 	// Handle kernel-mode page faults.
 	// LAB 3: Your code here.
-	if ((tf->tf_cs & 3) == 3) {
+	if ((tf->tf_cs & 3) != 0) {
 		// Trapped from user mode.
 		panic("page fault in kernel");
 	}

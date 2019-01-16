@@ -29,7 +29,7 @@ set_pgfault_handler(void (*handler)(struct UTrapframe *utf))
 	if (_pgfault_handler == 0) {
 		// First time through!
 		// LAB 4: Your code here.
-		sys_page_alloc(sys_getenvid(), (void*)UXSTACKTOP,
+		sys_page_alloc(sys_getenvid(), (void*)UXSTACKTOP-PGSIZE,
 			       PTE_U | PTE_W | PTE_P);
 		/* panic("set_pgfault_handler not implemented"); */
 	}

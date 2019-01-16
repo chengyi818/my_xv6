@@ -14,6 +14,9 @@
 #include <kern/cpu.h>
 #include <kern/spinlock.h>
 
+/* #define __DEBUG__ */
+#include <inc/cydebug.h>
+
 static struct Taskstate ts;
 
 /* For debugging, so print_trapframe can distinguish between printing
@@ -353,8 +356,11 @@ page_fault_handler(struct Trapframe *tf)
 
 	// Handle kernel-mode page faults.
 	// LAB 3: Your code here.
-	if ((tf->tf_cs & 3) != 0) {
-		// Trapped from user mode.
+	// tf->tf_cs低两位
+	// 用户态: 3
+	// 内核态: 0
+	if ((tf->tf_cs & 3) == 0) {
+		// 禁止处理内核态的page fault
 		panic("page fault in kernel");
 	}
 
@@ -404,13 +410,16 @@ page_fault_handler(struct Trapframe *tf)
 	}
 
 	// 2. 决定uf起始地址
-	if(tf->tf_esp < USTACKTOP) {
-		// 首次异常
-		uf = (struct UTrapframe*)(UXSTACKTOP-uf_len);
-	} else {
+	if(tf->tf_esp < UXSTACKTOP-1 && tf->tf_esp > UXSTACKTOP-PGSIZE) {
 		// 递归异常
 		uf = (struct UTrapframe*)(tf->tf_esp-uf_len-4);
+	} else {
+		// 首次异常
+		uf = (struct UTrapframe*)(UXSTACKTOP-uf_len);
 	}
+
+	DEBUG("fault_va: %p, tf->tf_esp: %p\n", fault_va, tf->tf_esp);
+	DEBUG("uf: %p, uf_len: 0x%08x\n", uf, uf_len);
 	// 3. 内存及权限检查
 	user_mem_assert(curenv, uf, uf_len, PTE_W);
 

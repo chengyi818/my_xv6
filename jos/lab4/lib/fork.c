@@ -60,25 +60,79 @@ duppage(envid_t envid, unsigned pn)
 
 //
 // User-level fork with copy-on-write.
-// Set up our page fault handler appropriately.
-// Create a child.
-// Copy our address space and page fault handler setup to the child.
-// Then mark the child as runnable and return.
+// 1. Set up our page fault handler appropriately.
+// 2. Create a child.
+// 3. Copy our address space
+// 4. and page fault handler setup to the child.
+// 5. Then mark the child as runnable and return.
 //
 // Returns: child's envid to the parent, 0 to the child, < 0 on error.
 // It is also OK to panic on error.
 //
 // Hint:
-//   Use uvpd, uvpt, and duppage.
-//   Remember to fix "thisenv" in the child process.
-//   Neither user exception stack should ever be marked copy-on-write,
-//   so you must allocate a new page for the child's user exception stack.
+//   6. Use uvpd, uvpt, and duppage.
+//   7. Remember to fix "thisenv" in the child process.
+//   8. Neither user exception stack should ever be marked copy-on-write,
+//   9. so you must allocate a new page for the child's user exception stack.
 //
 envid_t
 fork(void)
 {
 	// LAB 4: Your code here.
-	panic("fork not implemented");
+	/* panic("fork not implemented"); */
+	unsigned pn;
+	envid_t envid;
+
+	// 1
+	set_pgfault_handler(pgfault);
+
+	// 2
+	envid = sys_exofork();
+	if (envid < 0)
+		panic("sys_exofork: %e", envid);
+	if (envid == 0) {
+		// We're the child.
+
+		// 7
+		// The copied value of the global variable 'thisenv'
+		// is no longer valid (it refers to the parent!).
+		// Fix it and return 0.
+		thisenv = &envs[ENVX(sys_getenvid())];
+
+		// 9
+		if((r=sys_page_alloc(thisenv->env_id, UXSTACKTOP-PGSIZE,
+				     PTE_U|PTE_P|PTE_W)) < 0)
+			panic("sys_page_alloc: %e", r);
+
+		return 0;
+	} else {
+		// We're the parent
+		// 3
+		for(pte_t* addr=(pte_t*)uvpt; addr < (pte_t*)uvpd; addr++) {
+			pn = addr-uvpt;
+			// 8
+			if(pn*PGSIZE >= USTACKTOP)
+				break;
+
+			// 6
+			if((*addr & PTE_W) || (*addr & PTE_COW)) {
+				if((r = duppage(envid, pn)) < 0)
+					panic("duppage: %e", r)
+			}
+		}
+
+		// 8
+		sys_page_alloc(envid, (void*)UXSTACKTOP-PGSIZE,
+			       PTE_U | PTE_W | PTE_P);
+		// 4
+		sys_env_set_pgfault_upcall(envid, pgfault);
+
+		// 5
+		if ((r = sys_env_set_status(envid, ENV_RUNNABLE)) < 0)
+			panic("sys_env_set_status: %e", r);
+
+		return envid;
+	}
 }
 
 // Challenge!

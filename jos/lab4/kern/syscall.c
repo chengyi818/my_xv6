@@ -135,7 +135,8 @@ sys_env_set_status(envid_t envid, int status)
 		return r;
 	}
 	ep->env_status = status;
-        return 0;
+	DEBUG("set envid: %d runnable\n", envid);
+	return 0;
 }
 
 // Set the page fault upcall for 'envid' by modifying the corresponding struct
@@ -195,6 +196,7 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	int r;
 	struct Env* ep = NULL;
 	r = envid2env(envid, &ep, 1);
+	DEBUG("env_id: %d\n", ep->env_id);
 	if(r < 0) {
 		DEBUG("1 envid:%d\n", envid);
 		return r;
@@ -225,6 +227,7 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	if(r < 0) {
 		return r;
 	}
+	DEBUG("sys_page_alloc return 0\n");
 	return 0;
 
 	/* panic("sys_page_alloc not implemented"); */
@@ -273,11 +276,11 @@ sys_page_map(envid_t srcenvid, void *srcva,
 
 	// 2
 	if((uintptr_t)srcva >= UTOP || (uintptr_t)srcva%PGSIZE != 0) {
-		DEBUG("2");
+		DEBUG("srcva: %p", srcva);
 		return -E_INVAL;
 	}
 	if((uintptr_t)dstva >= UTOP || (uintptr_t)dstva%PGSIZE != 0) {
-		DEBUG("2");
+		DEBUG("2 2");
 		return -E_INVAL;
 	}
 
@@ -299,9 +302,11 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	}
 
 	// 5
-	if((*pte&PTE_W) != (perm&PTE_W)) {
-		DEBUG("5");
-		return -E_INVAL;
+	if(perm&PTE_W) {
+		if(!(*pte&PTE_W)) {
+			DEBUG("5");
+			return -E_INVAL;
+		}
 	}
 
 	// 6

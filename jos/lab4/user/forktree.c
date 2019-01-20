@@ -2,6 +2,9 @@
 
 #include <inc/lib.h>
 
+/* #define __DEBUG__ */
+#include <inc/cydebug.h>
+
 #define DEPTH 3
 
 void forktree(const char *cur);
@@ -13,6 +16,8 @@ forkchild(const char *cur, char branch)
 
 	if (strlen(cur) >= DEPTH)
 		return;
+
+	DEBUG("envid: %d ,cur: %s ,branch: %c\n", thisenv->env_id, cur, branch);
 
 	snprintf(nxt, DEPTH+1, "%s%c", cur, branch);
 	if (fork() == 0) {
@@ -35,4 +40,3 @@ umain(int argc, char **argv)
 {
 	forktree("");
 }
-

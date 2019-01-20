@@ -83,7 +83,7 @@ envid2env(envid_t envid, struct Env **env_store, bool checkperm)
 		return 0;
 	}
 
-	DEBUG("env_id: %d\n", envid);
+	/* DEBUG("env_id: %d\n", envid); */
 
 	// Look up the Env structure via the index part of the envid,
 	// then check the env_id field in that struct Env
@@ -130,7 +130,7 @@ env_init(void)
 		tmp->env_status = ENV_FREE;
 
 		tmp->env_link = env_free_list;
-		env_free_list = envs+i;
+		env_free_list = tmp;
 	}
 	DEBUG("envs start: %p\n", envs);
 	DEBUG("env_free_list out: %p\n", env_free_list);
@@ -310,22 +310,16 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
 
-	uint32_t i;
+	void* i;
 	struct PageInfo *p = NULL;
-	pte_t* pte;
 
-	for(i = (uint32_t)ROUNDDOWN((uint32_t)va, PGSIZE);
-	    i < (uint32_t)ROUNDUP((uint32_t)va+len, PGSIZE); i += PGSIZE) {
-		pte = pgdir_walk(e->env_pgdir, (void*)i, 1);
-		if(*pte & PTE_P) {
-			*pte |= PTE_U | PTE_W;
-			continue;
-		}
-
+	for(i = ROUNDDOWN(va, PGSIZE);i < ROUNDUP(va+len, PGSIZE); i += PGSIZE) {
 		if (!(p = page_alloc(ALLOC_ZERO)))
 			panic("page_alloc fail");
-		*pte = page2pa(p) | PTE_U | PTE_W | PTE_P;
+
+		page_insert(e->env_pgdir, p, i, PTE_W|PTE_U|PTE_P);
 	}
+
 }
 
 //
@@ -409,15 +403,7 @@ load_icode(struct Env *e, uint8_t *binary)
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
 	// LAB 3: Your code here.
-	///////////////////////////////////////////////////////
-	pte_t* pte = pgdir_walk(e->env_pgdir, (void*)USTACKTOP-PGSIZE, 1);
-	struct PageInfo *p = page_alloc(ALLOC_ZERO);
-	if(!p) {
-		panic("page_alloc fail");
-	}
-	*pte = page2pa(p) | PTE_U | PTE_W | PTE_P;
-	/////////////////////////////////////////////////////////
-	/* region_alloc(e, (void*)(USTACKTOP-PGSIZE), PGSIZE); */
+	region_alloc(e, (void*)(USTACKTOP-PGSIZE), PGSIZE);
 }
 
 //
@@ -450,6 +436,7 @@ env_create(uint8_t *binary, enum EnvType type)
 void
 env_free(struct Env *e)
 {
+	envid_t envid = e->env_id;
 	pte_t *pt;
 	uint32_t pdeno, pteno;
 	physaddr_t pa;
@@ -494,6 +481,7 @@ env_free(struct Env *e)
 	e->env_status = ENV_FREE;
 	e->env_link = env_free_list;
 	env_free_list = e;
+	DEBUG("after %d free %d\n", curenv->env_id, envid);
 }
 
 //
@@ -533,7 +521,7 @@ env_pop_tf(struct Trapframe *tf)
 	// Record the CPU we are running on for user-space debugging
 	curenv->env_cpunum = cpunum();
 
-	DEBUG("tf: %p\n", tf);
+	/* DEBUG("tf: %p\n", tf); */
 	asm volatile(
 		"\tmovl %0,%%esp\n"
 		"\tpopal\n"
@@ -572,8 +560,11 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
-	DEBUG("e: %p\n", e);
-	DEBUG("e->env_pgdir: %p\n", e->env_pgdir);
+	/* panic("env_run not yet implemented"); */
+
+	DEBUG("envid: %d\n", e->env_id);
+	/* DEBUG("e: %p\n", e); */
+	/* DEBUG("e->env_pgdir: %p\n", e->env_pgdir); */
 	if(curenv && curenv->env_status == ENV_RUNNING) {
 		curenv->env_status = ENV_RUNNABLE;
 	}
@@ -582,10 +573,8 @@ env_run(struct Env *e)
 	curenv->env_runs++;
 	lcr3(PADDR(e->env_pgdir));
 
-	DEBUG("e->env_tf: %p\n", &(e->env_tf));
-	DEBUG("e->env_tf.tf_eip: %p\n", e->env_tf.tf_eip);
+	/* DEBUG("e->env_tf: %p\n", &(e->env_tf)); */
+	/* DEBUG("e->env_tf.tf_eip: %p\n", e->env_tf.tf_eip); */
 	unlock_kernel();
 	env_pop_tf(&(e->env_tf));
-
-	panic("env_run not yet implemented");
 }

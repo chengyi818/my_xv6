@@ -68,25 +68,42 @@ static const char *trapname(int trapno)
 	return "(unknown trap)";
 }
 
-void vector0();
-void vector1();
-void vector2();
-void vector3();
-void vector4();
-void vector5();
-void vector6();
-void vector7();
-void vector8();
-void vector10();
-void vector11();
-void vector12();
-void vector13();
-void vector14();
-void vector16();
-void vector17();
-void vector18();
-void vector19();
-void vector48();
+void handler0();
+void handler1();
+void handler2();
+void handler3();
+void handler4();
+void handler5();
+void handler6();
+void handler7();
+void handler8();
+void handler10();
+void handler11();
+void handler12();
+void handler13();
+void handler14();
+void handler16();
+void handler17();
+void handler18();
+void handler19();
+void handler32();
+void handler33();
+void handler34();
+void handler35();
+void handler36();
+void handler37();
+void handler38();
+void handler39();
+void handler40();
+void handler41();
+void handler42();
+void handler43();
+void handler44();
+void handler45();
+void handler46();
+void handler47();
+void handler48();
+void handler51();
 
 void
 trap_init(void)
@@ -94,27 +111,39 @@ trap_init(void)
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
+	// processor
 	// SETGATE(gate, istrap, sel, off, dpl);
-	SETGATE(idt[T_DIVIDE], 0, GD_KT, vector0, DPL_KERNEL);
-	SETGATE(idt[T_DEBUG], 0, GD_KT, vector1, DPL_KERNEL);
-	SETGATE(idt[T_NMI], 0, GD_KT, vector2, DPL_KERNEL);
-	SETGATE(idt[T_BRKPT], 0, GD_KT, vector3, DPL_USER);
-	/* SETGATE(idt[T_BRKPT], 0, GD_KT, vector3, DPL_KERNEL); */
-	SETGATE(idt[T_OFLOW], 0, GD_KT, vector4, DPL_KERNEL);
-	SETGATE(idt[T_BOUND], 0, GD_KT, vector5, DPL_KERNEL);
-	SETGATE(idt[T_ILLOP], 0, GD_KT, vector6, DPL_KERNEL);
-	SETGATE(idt[T_DEVICE], 0, GD_KT, vector7, DPL_KERNEL);
-	SETGATE(idt[T_DBLFLT], 0, GD_KT, vector8, DPL_KERNEL);
-	SETGATE(idt[T_TSS], 0, GD_KT, vector10, DPL_KERNEL);
-	SETGATE(idt[T_SEGNP], 0, GD_KT, vector11, DPL_KERNEL);
-	SETGATE(idt[T_STACK], 0, GD_KT, vector12, DPL_KERNEL);
-	SETGATE(idt[T_GPFLT], 0, GD_KT, vector13, DPL_KERNEL);
-	SETGATE(idt[T_PGFLT], 0, GD_KT, vector14, DPL_KERNEL);
-	SETGATE(idt[T_FPERR], 0, GD_KT, vector16, DPL_KERNEL);
-	SETGATE(idt[T_ALIGN], 0, GD_KT, vector17, DPL_KERNEL);
-	SETGATE(idt[T_MCHK], 0, GD_KT, vector18, DPL_KERNEL);
-	SETGATE(idt[T_SIMDERR], 0, GD_KT, vector19, DPL_KERNEL);
-	SETGATE(idt[T_SYSCALL], 0, GD_KT, vector48, DPL_USER);
+	SETGATE(idt[T_DIVIDE], 0, GD_KT, handler0, DPL_KERNEL);
+	SETGATE(idt[T_DEBUG], 0, GD_KT, handler1, DPL_KERNEL);
+	SETGATE(idt[T_NMI], 0, GD_KT, handler2, DPL_KERNEL);
+	SETGATE(idt[T_BRKPT], 0, GD_KT, handler3, DPL_USER);
+	/* SETGATE(idt[T_BRKPT], 0, GD_KT, handler3, DPL_KERNEL); */
+	SETGATE(idt[T_OFLOW], 0, GD_KT, handler4, DPL_KERNEL);
+	SETGATE(idt[T_BOUND], 0, GD_KT, handler5, DPL_KERNEL);
+	SETGATE(idt[T_ILLOP], 0, GD_KT, handler6, DPL_KERNEL);
+	SETGATE(idt[T_DEVICE], 0, GD_KT, handler7, DPL_KERNEL);
+	SETGATE(idt[T_DBLFLT], 0, GD_KT, handler8, DPL_KERNEL);
+	SETGATE(idt[T_TSS], 0, GD_KT, handler10, DPL_KERNEL);
+	SETGATE(idt[T_SEGNP], 0, GD_KT, handler11, DPL_KERNEL);
+	SETGATE(idt[T_STACK], 0, GD_KT, handler12, DPL_KERNEL);
+	SETGATE(idt[T_GPFLT], 0, GD_KT, handler13, DPL_KERNEL);
+	SETGATE(idt[T_PGFLT], 0, GD_KT, handler14, DPL_KERNEL);
+	SETGATE(idt[T_FPERR], 0, GD_KT, handler16, DPL_KERNEL);
+	SETGATE(idt[T_ALIGN], 0, GD_KT, handler17, DPL_KERNEL);
+	SETGATE(idt[T_MCHK], 0, GD_KT, handler18, DPL_KERNEL);
+	SETGATE(idt[T_SIMDERR], 0, GD_KT, handler19, DPL_KERNEL);
+
+	// syscall
+	SETGATE(idt[T_SYSCALL], 0, GD_KT, handler48, DPL_USER);
+
+	// IRQ
+	SETGATE(idt[IRQ_OFFSET+IRQ_TIMER], 0, GD_KT, handler32, DPL_KERNEL);
+	SETGATE(idt[IRQ_OFFSET+IRQ_KBD], 0, GD_KT, handler33, DPL_KERNEL);
+	SETGATE(idt[IRQ_OFFSET+IRQ_SERIAL], 0, GD_KT, handler36, DPL_KERNEL);
+	SETGATE(idt[IRQ_OFFSET+IRQ_SPURIOUS], 0, GD_KT, handler39, DPL_KERNEL);
+	SETGATE(idt[IRQ_OFFSET+IRQ_IDE], 0, GD_KT, handler46, DPL_KERNEL);
+	SETGATE(idt[IRQ_OFFSET+IRQ_ERROR], 0, GD_KT, handler51, DPL_KERNEL);
+
 
 	// Per-CPU setup
 	trap_init_percpu();
@@ -251,6 +280,9 @@ trap_dispatch(struct Trapframe *tf)
 					      tf->tf_regs.reg_edi,
 					      tf->tf_regs.reg_esi);
 		return;
+	case IRQ_OFFSET + IRQ_TIMER:
+		lapic_eoi();
+		sched_yield();
 	default:
 		break;
 	}

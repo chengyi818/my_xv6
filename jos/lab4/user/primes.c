@@ -24,11 +24,18 @@ top:
 	// fork a right neighbor to continue the chain
 	if ((id = fork()) < 0)
 		panic("fork: %e", id);
-	if (id == 0)
+
+	if (id == 0){
+		// 子进程不断接受自己父进程发送的数字
 		goto top;
+	}
+
 
 	// filter out multiples of our prime
 	while (1) {
+		// 当前进程不断接受父进程发送的数字
+		// 当前进程持有数字p
+		// 若可以被自己整除,并发送给自己的子进程
 		i = ipc_recv(&envid, 0, 0);
 		if (i % p)
 			ipc_send(id, i, 0, 0);
@@ -43,11 +50,14 @@ umain(int argc, char **argv)
 	// fork the first prime process in the chain
 	if ((id = fork()) < 0)
 		panic("fork: %e", id);
-	if (id == 0)
+	if (id == 0) {
 		primeproc();
+	}
 
 	// feed all the integers through
-	for (i = 2; ; i++)
+	for (i = 2; ; i++) {
+		// 不断向子进程发送递增的int
 		ipc_send(id, i, 0, 0);
-}
+	}
 
+}

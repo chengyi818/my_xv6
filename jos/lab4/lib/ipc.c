@@ -2,13 +2,16 @@
 
 #include <inc/lib.h>
 
+#define __DEBUG__
+#include <inc/cydebug.h>
+
 // Receive a value via IPC and return it.
 // If 'pg' is nonnull, then any page sent by the sender will be mapped at
 //	that address.
 // If 'from_env_store' is nonnull, then store the IPC sender's envid in
 //	*from_env_store.
 // If 'perm_store' is nonnull, then store the IPC sender's page permission
-//	in *perm_store (this is nonzero iff a page was successfully
+//	in *perm_store (this is nonzero if a page was successfully
 //	transferred to 'pg').
 // If the system call fails, then store 0 in *fromenv and *perm (if
 //	they're nonnull) and return the error.
@@ -23,8 +26,28 @@ int32_t
 ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
 {
 	// LAB 4: Your code here.
-	panic("ipc_recv not implemented");
-	return 0;
+	/* panic("ipc_recv not implemented"); */
+	int r;
+	if(pg) {
+		r = sys_ipc_recv(pg);
+	} else {
+		r = sys_ipc_recv((void*)KERNBASE);
+	}
+
+	if(r < 0) {
+		*from_env_store = 0;
+		*perm_store = 0;
+		return r;
+	}
+
+	if(from_env_store) {
+		*from_env_store = thisenv->env_ipc_from;
+	}
+	if(perm_store) {
+		*perm_store = thisenv->env_ipc_perm;
+	}
+
+	return thisenv->env_ipc_value;
 }
 
 // Send 'val' (and 'pg' with 'perm', if 'pg' is nonnull) to 'toenv'.
@@ -39,7 +62,23 @@ void
 ipc_send(envid_t to_env, uint32_t val, void *pg, int perm)
 {
 	// LAB 4: Your code here.
-	panic("ipc_send not implemented");
+	/* panic("ipc_send not implemented"); */
+	int r;
+	void* target = (void*)KERNBASE;
+	if(pg) {
+		target = pg;
+	}
+
+	while(1) {
+		r = sys_ipc_try_send(to_env, val, target, perm);
+		if(r == 0) {
+			break;
+		} if(r != -E_IPC_NOT_RECV) {
+			panic("ipc_send");
+		}
+		sys_yield();
+	}
+
 }
 
 // Find the first environment of the given type.  We'll use this to

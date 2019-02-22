@@ -35,6 +35,10 @@ struct {
   struct buf head;
 } bcache;
 
+/*
+  初始化buffer cache
+  构建双向链表
+ */
 void
 binit(void)
 {
@@ -136,9 +140,8 @@ brelse(struct buf *b)
     bcache.head.next->prev = b;
     bcache.head.next = b;
   }
-  
+
   release(&bcache.lock);
 }
 //PAGEBREAK!
 // Blank page.
-

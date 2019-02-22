@@ -15,6 +15,7 @@ struct spinlock tickslock;
 uint ticks;
 int mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm);
 
+// trap vector
 void
 tvinit(void)
 {

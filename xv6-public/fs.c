@@ -633,6 +633,7 @@ namex(char *path, int nameiparent, char *name)
     ip = idup(myproc()->cwd);
 
   while((path = skipelem(path, name)) != 0){
+    // ilock有强制载入ip的额外功能
     ilock(ip);
     if(ip->type != T_DIR){
       iunlockput(ip);

@@ -36,20 +36,50 @@ static void
 handle_sigsegv(int sig, siginfo_t *si, void *ctx)
 {
   // Your code here.
-
   // replace these three lines with your implementation
+
   uintptr_t fault_addr = (uintptr_t)si->si_addr;
   printf("oops got SIGSEGV at 0x%lx\n", fault_addr);
-  exit(EXIT_FAILURE);
+
+  // used to save mmap address
+  static void* vmstart = NULL;
+  // First, free last mmap page
+  if(vmstart != NULL) {
+      if (munmap(vmstart, page_size) == -1) {
+          fprintf(stderr, "Couldn't munmap() region for vmstart; %s\n",
+                  strerror(errno));
+          exit(EXIT_FAILURE);
+      }
+  }
+
+  // Second, mmap a new page
+  vmstart = mmap((void*)fault_addr, page_size, PROT_READ | PROT_WRITE,
+                 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  if(vmstart == MAP_FAILED) {
+      fprintf(stderr, "Couldn't mmap() region for sqrt table; %s\n",
+              strerror(errno));
+      exit(EXIT_FAILURE);
+  }
+  printf("vmstart: %p\n", vmstart);
+
+  // Third, init page
+  calculate_sqrts((double*)vmstart, (double*)vmstart-sqrts,
+                  page_size/sizeof(double));
+
+  /* exit(EXIT_FAILURE); */
 }
 
 static void
 setup_sqrt_region(void)
 {
-  struct rlimit lim = {AS_LIMIT, AS_LIMIT};
+  struct rlimit lim = {
+      AS_LIMIT,  // soft limit
+      AS_LIMIT   // hard limit
+  };
   struct sigaction act;
 
   // Only mapping to find a safe location for the table.
+  // 获取sqrts起始地址
   sqrts = mmap(NULL, MAX_SQRTS * sizeof(double) + AS_LIMIT, PROT_NONE,
 	       MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   if (sqrts == MAP_FAILED) {
@@ -66,12 +96,14 @@ setup_sqrt_region(void)
   }
 
   // Set a soft rlimit on virtual address-space bytes.
+  // 设置虚拟内存最大大小
   if (setrlimit(RLIMIT_AS, &lim) == -1) {
     fprintf(stderr, "Couldn't set rlimit on RLIMIT_AS; %s\n", strerror(errno));
     exit(EXIT_FAILURE);
   }
 
   // Register a signal handler to capture SIGSEGV.
+  // 注册一个信号处理函数
   act.sa_sigaction = handle_sigsegv;
   act.sa_flags = SA_SIGINFO;
   sigemptyset(&act.sa_mask);
@@ -95,6 +127,9 @@ test_sqrt_region(void)
       pos = rand() % (MAX_SQRTS - 1);
     else
       pos += 1;
+
+    printf("pos: %x, sqrts: %p\n", pos, sqrts);
+
     calculate_sqrts(&correct_sqrt, pos, 1);
     if (sqrts[pos] != correct_sqrt) {
       fprintf(stderr, "Square root is incorrect. Expected %f, got %f.\n",

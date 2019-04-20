@@ -5,6 +5,8 @@
 #include <kern/pmap.h>
 #include <kern/monitor.h>
 
+/* #define __DEBUG__ */
+#include <inc/cydebug.h>
 void sched_halt(void);
 
 // Choose a user environment to run and run it.
@@ -29,6 +31,34 @@ sched_yield(void)
 	// below to halt the cpu.
 
 	// LAB 4: Your code here.
+	struct Env* target = NULL;
+	DEBUG("CPU:%d call sched_yield", cpunum());
+
+	// 决定起始位置
+	int start = 0;
+	if(thiscpu->cpu_env) {
+		start = thiscpu->cpu_env - envs;
+	}
+
+	for(int i=start; i<start+NENV; i++) {
+		if(envs[i%NENV].env_status == ENV_RUNNABLE) {
+			target = &envs[i%NENV];
+			break;
+		}
+	}
+
+	// 没有找到RUNNABLE,继续当前进程
+	if(!target) {
+		if(thiscpu->cpu_env &&
+		   thiscpu->cpu_env->env_status == ENV_RUNNING) {
+			target = thiscpu->cpu_env;
+		}
+	}
+
+	// 找到合适的可运行进程
+	if(target) {
+		env_run(target);
+	}
 
 	// sched_halt never returns
 	sched_halt();
@@ -75,10 +105,9 @@ sched_halt(void)
 		"pushl $0\n"
 		"pushl $0\n"
 		// Uncomment the following line after completing exercise 13
-		//"sti\n"
+		"sti\n"
 		"1:\n"
 		"hlt\n"
 		"jmp 1b\n"
 	: : "a" (thiscpu->cpu_ts.ts_esp0));
 }
-

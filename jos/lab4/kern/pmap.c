@@ -751,32 +751,30 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 {
 	// LAB 3: Your code here.
 	int ret = 0;
-	uintptr_t i = (uintptr_t)ROUNDDOWN(va, PGSIZE);
-	while(true) {
-	    DEBUG("i: 0x%08x\n", i);
+	uintptr_t i = 0;
+	int check_perm = (perm | PTE_P);
 
-	    if(i >= (uintptr_t)ROUNDUP(va+len, PGSIZE)) {
-		    break;
-	    }
+	for(i = (uintptr_t)ROUNDDOWN(va, PGSIZE);
+	    i < (uintptr_t)ROUNDUP(va+len, PGSIZE); i+=PGSIZE) {
+		if(i >= ULIM) {
+			ret = -E_FAULT;
+			break;
+		}
 
-	    if(i > ULIM) {
-		    ret = -E_FAULT;
-		    DEBUG("i>ULIM");
-		    break;
-	    }
-
-	    pte_t* pte = pgdir_walk(env->env_pgdir, (void*)i, 0);
-	    if (pte == NULL || (*pte & (perm | PTE_P)) != (perm | PTE_P)) {
-		    ret = -E_FAULT;
-		    break;
-	    }
-
-	    i += PGSIZE;
+		pte_t* pte = pgdir_walk(env->env_pgdir,
+					(void*)i, 0);
+		if(!pte) {
+			ret = -E_FAULT;
+			break;
+		} else if((*pte & check_perm) != check_perm) {
+			ret = -E_FAULT;
+			break;
+		}
 	}
 
 	if(ret == -E_FAULT) {
-		DEBUG("va: %p, len: 0x%08x\n", va, len);
-		user_mem_check_addr = i;
+		user_mem_check_addr = (
+			i >= (uintptr_t)va) ? i: (uintptr_t)va;
 	}
 	return ret;
 }

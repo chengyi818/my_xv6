@@ -318,6 +318,8 @@ trap(struct Trapframe *tf)
 	// the interrupt path.
 	assert(!(read_eflags() & FL_IF));
 
+	cprintf("Incoming TRAP frame at %p\n", tf);
+
 	if ((tf->tf_cs & 3) == 3) {
 		// Trapped from user mode.
 		// Acquire the big kernel lock before doing any
@@ -422,12 +424,12 @@ page_fault_handler(struct Trapframe *tf)
 	}
 
 	// 2. 决定uf起始地址
-	if(tf->tf_esp < UXSTACKTOP-1 && tf->tf_esp > UXSTACKTOP-PGSIZE) {
+	if(tf->tf_esp <= UXSTACKTOP-1 && tf->tf_esp >= UXSTACKTOP-PGSIZE) {
 		// 递归异常
-		uf = (struct UTrapframe*)(tf->tf_esp-uf_len-4);
+		uf = (struct UTrapframe*)(tf->tf_esp - uf_len - 4);
 	} else {
 		// 首次异常
-		uf = (struct UTrapframe*)(UXSTACKTOP-uf_len);
+		uf = (struct UTrapframe*)(UXSTACKTOP - uf_len);
 	}
 
 	DEBUG("fault_va: %p, tf->tf_esp: %p\n", fault_va, tf->tf_esp);

@@ -10,6 +10,9 @@
 #include <kern/kclock.h>
 #include <kern/env.h>
 
+/* #define __DEBUG__ */
+#include <inc/cydebug.h>
+
 // These variables are set by i386_detect_memory()
 size_t npages;			// Amount of physical memory (in pages)
 static size_t npages_basemem;	// Amount of base memory (in pages)
@@ -613,28 +616,29 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 	// LAB 3: Your code here.
 	int ret = 0;
 	uintptr_t i = 0;
+	int check_perm = (perm | PTE_P);
 
-	for(i = (uintptr_t)ROUNDDOWN(va, PGSIZE); i < (uintptr_t)ROUNDUP(va+len, PGSIZE); i+=PGSIZE) {
-		if(i > ULIM) {
+	for(i = (uintptr_t)ROUNDDOWN(va, PGSIZE);
+	    i < (uintptr_t)ROUNDUP(va+len, PGSIZE); i+=PGSIZE) {
+		if(i >= ULIM) {
 			ret = -E_FAULT;
 			break;
 		}
 
-		pte_t* pte = pgdir_walk(env->env_pgdir, (void*)i, 0);
-		if(((uintptr_t)pte & PTE_U) == 0) {
+		pte_t* pte = pgdir_walk(env->env_pgdir,
+					(void*)i, 0);
+		if(!pte) {
 			ret = -E_FAULT;
 			break;
-		} else if(((uintptr_t)pte & PTE_P) == 0) {
-			ret = -E_FAULT;
-			break;
-		} else if((((uintptr_t)pte ^ perm) & perm) != 0) {
+		} else if((*pte & check_perm) != check_perm) {
 			ret = -E_FAULT;
 			break;
 		}
 	}
 
 	if(ret == -E_FAULT) {
-		user_mem_check_addr = i;
+		user_mem_check_addr = (
+			i >= (uintptr_t)va) ? i: (uintptr_t)va;
 	}
 	return ret;
 }

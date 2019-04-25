@@ -63,10 +63,22 @@ alloc_block(void)
 	// The bitmap consists of one or more blocks.  A single bitmap block
 	// contains the in-use bits for BLKBITSIZE blocks.  There are
 	// super->s_nblocks blocks in the disk altogether.
+	uint32_t blockno = 1;
+	while((bitmap[blockno/32] & (1<<(blockno%32))) == 0) {
+		blockno++;
+		if(blockno >= super->s_nblocks) {
+			return -E_NO_DISK;
+		}
+	}
+
+	bitmap[blockno/32] &= ~(1<<(blockno%32));
+	flush_block(diskaddr(1 + blockno/BLKBITSIZE));
+
+	return blockno;
 
 	// LAB 5: Your code here.
-	panic("alloc_block not implemented");
-	return -E_NO_DISK;
+	/* panic("alloc_block not implemented"); */
+	/* return -E_NO_DISK; */
 }
 
 // Validate the file system bitmap.

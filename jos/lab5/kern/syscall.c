@@ -291,12 +291,13 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	}
 
 	// 2
-	if((uintptr_t)srcva >= UTOP || (uintptr_t)srcva%PGSIZE != 0) {
+
+	if((uintptr_t)srcva >= UTOP || PGOFF(srcva)) {
 		DEBUG("srcva: %p", srcva);
 		return -E_INVAL;
 	}
-	if((uintptr_t)dstva >= UTOP || (uintptr_t)dstva%PGSIZE != 0) {
-		DEBUG("2 2");
+	if((uintptr_t)dstva >= UTOP || PGOFF(dstva)) {
+		DEBUG("dstva: %p", dstva);
 		return -E_INVAL;
 	}
 

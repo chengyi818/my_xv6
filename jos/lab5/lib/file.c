@@ -148,24 +148,35 @@ devfile_write(struct Fd *fd, const void *buf, size_t n)
 	/* panic("devfile_write not implemented"); */
 
 	int r = 0;
+
 	size_t buf_size = PGSIZE - (sizeof(int) + sizeof(size_t));
-	size_t left = n;
+	cprintf("n: %lu, buf_size: %lu\n", n, buf_size);
 
-	for(int i=0; i*buf_size < n; i++) {
-		fsipcbuf.write.req_fileid = fd->fd_file.id;
-		if(left < buf_size) {
-			fsipcbuf.write.req_n = left;
-			memmove(fsipcbuf.write.req_buf, (char*)buf+i*buf_size, left);
-		} else {
-			fsipcbuf.write.req_n = buf_size;
-			memmove(fsipcbuf.write.req_buf, (char*)buf+i*buf_size, buf_size);
-		}
+	fsipcbuf.write.req_fileid = fd->fd_file.id;
+	fsipcbuf.write.req_n = MIN(n, buf_size);
+	memmove(fsipcbuf.write.req_buf, (char*)buf, MIN(n, buf_size));
 
-		if ((r = fsipc(FSREQ_WRITE, NULL)) < 0)
-			return r;
+	if ((r = fsipc(FSREQ_WRITE, NULL)) < 0)
+		return r;
 
-		left -= buf_size;
-	}
+	/* size_t buf_size = PGSIZE - (sizeof(int) + sizeof(size_t)); */
+	/* size_t left = n; */
+
+	/* for(int i=0; i*buf_size < n; i++) { */
+	/* 	fsipcbuf.write.req_fileid = fd->fd_file.id; */
+	/* 	if(left < buf_size) { */
+	/* 		fsipcbuf.write.req_n = left; */
+	/* 		memmove(fsipcbuf.write.req_buf, (char*)buf+i*buf_size, left); */
+	/* 	} else { */
+	/* 		fsipcbuf.write.req_n = buf_size; */
+	/* 		memmove(fsipcbuf.write.req_buf, (char*)buf+i*buf_size, buf_size); */
+	/* 	} */
+
+	/* 	if ((r = fsipc(FSREQ_WRITE, NULL)) < 0) */
+	/* 		return r; */
+
+	/* 	left -= buf_size; */
+	/* } */
 
 	assert(r <= PGSIZE);
 	return r;

@@ -3,7 +3,7 @@
  */
 #include "fs.h"
 
-#define __DEBUG__
+/* #define __DEBUG__ */
 #include <inc/cydebug.h>
 
 // Return the virtual address of this disk block.

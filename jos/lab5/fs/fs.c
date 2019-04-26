@@ -63,6 +63,10 @@ alloc_block(void)
 	// The bitmap consists of one or more blocks.  A single bitmap block
 	// contains the in-use bits for BLKBITSIZE blocks.  There are
 	// super->s_nblocks blocks in the disk altogether.
+
+	// LAB 5: Your code here.
+	/* panic("alloc_block not implemented"); */
+	/* return -E_NO_DISK; */
 	uint32_t blockno = 1;
 	while((bitmap[blockno/32] & (1<<(blockno%32))) == 0) {
 		blockno++;
@@ -76,9 +80,6 @@ alloc_block(void)
 
 	return blockno;
 
-	// LAB 5: Your code here.
-	/* panic("alloc_block not implemented"); */
-	/* return -E_NO_DISK; */
 }
 
 // Validate the file system bitmap.
@@ -149,8 +150,36 @@ fs_init(void)
 static int
 file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool alloc)
 {
+	int r;
        // LAB 5: Your code here.
-       panic("file_block_walk not implemented");
+       /* panic("file_block_walk not implemented"); */
+	if(filebno < NDIRECT) {
+		*ppdiskbno = &f->f_direct[filebno];
+		return 0;
+	}
+
+	if(filebno >= NDIRECT + NINDIRECT) {
+		return -E_INVAL;
+	}
+
+retry:
+	if(f->f_indirect) {
+		uint32_t* indirect = diskaddr(f->f_indirect);
+		*ppdiskbno = &indirect[filebno-NDIRECT];
+		return 0;
+	}
+
+	if(alloc) {
+		if((r = alloc_block()) < 0)
+			return r;
+
+		memset(diskaddr(r), 0, BLKSIZE);
+		f->f_indirect = r;
+		goto retry;
+	}
+
+	return -E_NOT_FOUND;
+
 }
 
 // Set *blk to the address in memory where the filebno'th
@@ -164,8 +193,21 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
 int
 file_get_block(struct File *f, uint32_t filebno, char **blk)
 {
-       // LAB 5: Your code here.
-       panic("file_get_block not implemented");
+	// LAB 5: Your code here.
+	/* panic("file_get_block not implemented"); */
+	int r;
+	uint32_t* blocknop;
+	if((r = file_block_walk(f, filebno, &blocknop, 1)) < 0)
+		return r;
+
+	if(*blocknop == 0) {
+		if((r = alloc_block()) < 0)
+			return r;
+		*blocknop = r;
+	}
+
+	*blk = diskaddr(*blocknop);
+	return 0;
 }
 
 // Try to find a file named "name" in dir.  If so, set *file to it.
@@ -210,6 +252,7 @@ dir_alloc_file(struct File *dir, struct File **file)
 
 	assert((dir->f_size % BLKSIZE) == 0);
 	nblock = dir->f_size / BLKSIZE;
+	// 在目录现在block中,查找空闲File
 	for (i = 0; i < nblock; i++) {
 		if ((r = file_get_block(dir, i, &blk)) < 0)
 			return r;
@@ -220,6 +263,7 @@ dir_alloc_file(struct File *dir, struct File **file)
 				return 0;
 			}
 	}
+	// 新分配一个block给dir
 	dir->f_size += BLKSIZE;
 	if ((r = file_get_block(dir, i, &blk)) < 0)
 		return r;

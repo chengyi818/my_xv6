@@ -86,7 +86,7 @@ duppage(envid_t envid, unsigned pn)
 	if(*pte & PTE_SHARE) {
 		DEBUG("duppage pn: %u\n", pn);
 		if((r=sys_page_map(0, (void*)vaddr, envid, (void*)vaddr,
-				   ((*pte)&PTE_SYSCALL)|PTE_SHARE)) < 0) {
+				   (*pte)&PTE_SYSCALL)) < 0) {
 			panic("sys_page_map: %e", r);
 		}
 	} else if((*pte & PTE_W) || (*pte & PTE_COW)) {

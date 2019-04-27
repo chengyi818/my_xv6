@@ -75,7 +75,7 @@ duppage(envid_t envid, unsigned pn)
 	/* panic("duppage not implemented"); */
 	/* DEBUG("dumpage reutrn 0\n"); */
 	int r;
-	uintptr_t vaddr = pn*PGSIZE;
+	void* vaddr = (void*)(pn*PGSIZE);
 	pte_t* pte = (pte_t*)uvpt + pn;
 	if(!(*pte & PTE_P))
 		return 0;
@@ -85,24 +85,24 @@ duppage(envid_t envid, unsigned pn)
 	/* DEBUG("dumpage envid: %d pn: %d\n", envid, pn); */
 	if(*pte & PTE_SHARE) {
 		DEBUG("duppage pn: %u\n", pn);
-		if((r=sys_page_map(0, (void*)vaddr, envid, (void*)vaddr,
+		if((r=sys_page_map(0, vaddr, envid, vaddr,
 				   (*pte)&PTE_SYSCALL)) < 0) {
 			panic("sys_page_map: %e", r);
 		}
 	} else if((*pte & PTE_W) || (*pte & PTE_COW)) {
-		if((r=sys_page_map(0, (void*)vaddr, envid, (void*)vaddr,
+		if((r=sys_page_map(0, vaddr, envid, vaddr,
 						   PTE_U | PTE_P | PTE_COW)) < 0) {
 			panic("sys_page_map: %e", r);
 		}
 
-		if((r=sys_page_map(0, (void*)vaddr, 0, (void*)vaddr,
+		if((r=sys_page_map(0, vaddr, 0, vaddr,
 						   PTE_U | PTE_P | PTE_COW)) < 0) {
 			panic("sys_page_map: %e", r);
 		}
 	} else {
 		// PTE_P
-		if((r=sys_page_map(0, (void*)vaddr, envid, (void*)vaddr,
-						   PGOFF(*pte))) < 0) {
+		if((r=sys_page_map(0, vaddr, envid, vaddr,
+						   PTE_U|PTE_P)) < 0) {
 			panic("sys_page_map: %e", r);
 		}
 	}

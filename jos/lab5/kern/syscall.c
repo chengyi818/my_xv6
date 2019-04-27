@@ -164,6 +164,8 @@ sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
 	}
 
 	memcpy(&son->env_tf, tf, sizeof(struct Trapframe));
+	son->env_tf.tf_eflags |= FL_IF;
+	son->env_tf.tf_eflags &= ~FL_IOPL_MASK;
 
 	return 0;
 }

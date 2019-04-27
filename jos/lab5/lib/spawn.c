@@ -8,6 +8,9 @@
 #define UTEMP2			(UTEMP + PGSIZE)
 #define UTEMP3			(UTEMP2 + PGSIZE)
 
+#define __DEBUG__
+#include <inc/cydebug.h>
+
 // Helper functions for spawn.
 static int init_stack(envid_t child, const char **argv, uintptr_t *init_esp);
 static int map_segment(envid_t child, uintptr_t va, size_t memsz,
@@ -305,5 +308,46 @@ static int
 copy_shared_pages(envid_t child)
 {
 	// LAB 5: Your code here.
+	uintptr_t addr;
+	for (addr = 0; addr < UTOP; addr += PGSIZE) {
+		if ((uvpd[PDX(addr)] & PTE_P) && (uvpt[PGNUM(addr)] & PTE_P) &&
+		    (uvpt[PGNUM(addr)] & PTE_U) && (uvpt[PGNUM(addr)] & PTE_SHARE)) {
+			// cprintf("copy shared page %d to env:%x\n", PGNUM(addr), child);
+			sys_page_map(0, (void*)addr, child, (void*)addr, (uvpt[PGNUM(addr)] & PTE_SYSCALL));
+		}
+	}
 	return 0;
+
+	/* int r; */
+	/* uintptr_t vaddr; */
+	/* uint32_t pdeno, pteno; */
+
+	/* DEBUG("enter copy_shared_pages\n"); */
+	/* for(pdeno=0; pdeno<PDX(UTOP); pdeno++) { */
+	/* 	pde_t* p = (pde_t*)uvpd + pdeno; */
+	/* 	if(!(*p & PTE_P)) */
+	/* 		continue; */
+
+	/* 	for(pteno = 0; pteno<1024; pteno++) { */
+	/* 		unsigned pn = 1024*pdeno + pteno; */
+	/* 		pte_t* pte = (pte_t*)uvpt + pn; */
+
+	/* 		if(!(*pte & PTE_P)) */
+	/* 			continue; */
+	/* 		if(!(*pte & PTE_SHARE)) */
+	/* 			continue; */
+
+	/* 		vaddr = pn*PGSIZE; */
+	/* 		DEBUG("pdeno: %lu, pteno: %lu, pn: %lu\n", pdeno, pteno, pn); */
+	/* 		DEBUG("vaddr: %lu\n", vaddr); */
+
+	/* 		if((r=sys_page_map(0, (void*)vaddr, child, (void*)vaddr, */
+	/* 				   ((*pte)&PTE_SYSCALL)|PTE_SHARE)) < 0) { */
+	/* 			panic("sys_page_map: %e", r); */
+	/* 		} */
+	/* 	} */
+	/* } */
+
+	/* DEBUG("exit copy_shared_pages\n"); */
+	/* return 0; */
 }

@@ -288,6 +288,9 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	//   parameters for correctness.
 	//   Use the third argument to page_lookup() to
 	//   check the current permissions on the page.
+
+	// LAB 4: Your code here.
+	/* panic("sys_page_map not implemented"); */
 	int r;
 	pte_t* pte;
 	struct PageInfo * pp;
@@ -346,8 +349,6 @@ sys_page_map(envid_t srcenvid, void *srcva,
 		return r;
 	}
 	return 0;
-	// LAB 4: Your code here.
-	/* panic("sys_page_map not implemented"); */
 }
 
 // Unmap the page of memory at 'va' in the address space of 'envid'.

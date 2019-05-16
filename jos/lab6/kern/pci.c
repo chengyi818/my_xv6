@@ -5,6 +5,9 @@
 #include <kern/pcireg.h>
 #include <kern/e1000.h>
 
+#define __DEBUG__
+#include <inc/cydebug.h>
+
 // Flag to do "lspci" at bootup
 static int pci_show_devs = 1;
 static int pci_show_addrs = 0;
@@ -31,6 +34,7 @@ struct pci_driver pci_attach_class[] = {
 // pci_attach_vendor matches the vendor ID and device ID of a PCI device. key1
 // and key2 should be the vendor ID and device ID respectively
 struct pci_driver pci_attach_vendor[] = {
+	{ E1000_VENDOR_ID_82540EM, E1000_DEV_ID_82540EM, &e1000_attchfn},
 	{ 0, 0, 0 },
 };
 
@@ -232,6 +236,8 @@ pci_func_enable(struct pci_func *f)
 		pci_conf_write(f, bar, oldv);
 		f->reg_base[regnum] = base;
 		f->reg_size[regnum] = size;
+
+		DEBUG("regnum: %d, base 0x%x, size %d\n", regnum, base, size);
 
 		if (size && !base)
 			cprintf("PCI device %02x:%02x.%d (%04x:%04x) "

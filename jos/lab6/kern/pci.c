@@ -5,7 +5,7 @@
 #include <kern/pcireg.h>
 #include <kern/e1000.h>
 
-#define __DEBUG__
+/* #define __DEBUG__ */
 #include <inc/cydebug.h>
 
 // Flag to do "lspci" at bootup
@@ -237,7 +237,6 @@ pci_func_enable(struct pci_func *f)
 		f->reg_base[regnum] = base;
 		f->reg_size[regnum] = size;
 
-		DEBUG("regnum: %d, base 0x%x, size %d\n", regnum, base, size);
 
 		if (size && !base)
 			cprintf("PCI device %02x:%02x.%d (%04x:%04x) "

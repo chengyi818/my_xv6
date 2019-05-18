@@ -127,5 +127,6 @@ static void e1000_transmit_init();
 int e1000_transmit(void *data, size_t len);
 
 static void e1000_receive_init();
+int e1000_receive(void *addr, size_t *len);
 
 #endif	// JOS_KERN_E1000_H

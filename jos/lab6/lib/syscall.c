@@ -127,5 +127,9 @@ sys_time_msec(void)
 int
 sys_pkt_send(void* data, int len) {
 	return (int) syscall(SYS_pkt_send, 1, (uint32_t)data, len, 0, 0, 0);
+}
 
+int
+sys_pkt_recv(void* data, size_t* len) {
+	return (int) syscall(SYS_pkt_recv, 1, (uint32_t)data, (uint32_t)len, 0, 0, 0);
 }

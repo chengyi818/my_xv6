@@ -32,6 +32,7 @@ input(envid_t ns_envid)
 	char buf[RX_PKT_SIZE];
 	while (1) {
 		if (sys_pkt_recv(buf, &len) < 0) {
+			sleep(100);
 			continue;
 		}
 		memcpy(nsipcbuf.pkt.jp_data, buf, len);
